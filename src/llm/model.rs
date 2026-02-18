@@ -490,6 +490,9 @@ impl SpacebotModel {
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("authorization", format!("Bearer {api_key}"))
             .header("content-type", "application/json")
+            // OpenRouter recommends these headers for better analytics and ranking
+            .header("http-referer", "https://github.com/kingassune/spacebot")
+            .header("x-title", "Spacebot")
             .json(&body)
             .send()
             .await
@@ -1060,7 +1063,27 @@ fn parse_openai_response(
     body: serde_json::Value,
     provider_label: &str,
 ) -> Result<completion::CompletionResponse<RawResponse>, CompletionError> {
-    let choice = &body["choices"][0]["message"];
+    // Validate response structure before accessing
+    let choices = body["choices"]
+        .as_array()
+        .ok_or_else(|| CompletionError::ResponseError(
+            format!("{provider_label} response missing 'choices' array")
+        ))?;
+    
+    if choices.is_empty() {
+        return Err(CompletionError::ResponseError(
+            format!("{provider_label} response contains empty 'choices' array")
+        ));
+    }
+
+    let choice = &choices[0]["message"];
+    
+    // Validate that message object exists
+    if choice.is_null() {
+        return Err(CompletionError::ResponseError(
+            format!("{provider_label} response missing 'message' object in choice")
+        ));
+    }
 
     let mut assistant_content = Vec::new();
 
