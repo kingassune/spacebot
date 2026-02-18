@@ -1129,3 +1129,82 @@ fn parse_openai_response(
         raw_response: RawResponse { body },
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn test_parse_openai_response_validates_structure() {
+        // Test missing choices array
+        let body = json!({});
+        let result = parse_openai_response(body, "TestProvider");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing 'choices' array"));
+
+        // Test empty choices array
+        let body = json!({
+            "choices": []
+        });
+        let result = parse_openai_response(body, "TestProvider");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("empty 'choices' array"));
+
+        // Test missing message object
+        let body = json!({
+            "choices": [{}]
+        });
+        let result = parse_openai_response(body, "TestProvider");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("missing 'message' object"));
+
+        // Test valid minimal response
+        let body = json!({
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": "Hello"
+                }
+            }],
+            "usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 5
+            }
+        });
+        let result = parse_openai_response(body, "TestProvider");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_openai_response_handles_tool_calls() {
+        let body = json!({
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "tool_calls": [{
+                        "id": "call_123",
+                        "function": {
+                            "name": "test_tool",
+                            "arguments": "{\"param\":\"value\"}"
+                        }
+                    }]
+                }
+            }],
+            "usage": {
+                "prompt_tokens": 10,
+                "completion_tokens": 5
+            }
+        });
+        let result = parse_openai_response(body, "TestProvider");
+        assert!(result.is_ok());
+        let response = result.unwrap();
+        // Verify the response contains tool calls
+        match &response.choice {
+            OneOrMany::Many(contents) => {
+                assert!(contents.iter().any(|c| matches!(c, AssistantContent::ToolCall(_))));
+            }
+            _ => panic!("Expected OneOrMany::Many"),
+        }
+    }
+}
