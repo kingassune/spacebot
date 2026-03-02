@@ -1,4 +1,4 @@
-//! Spacebot CLI entry point.
+//! James CLI entry point.
 
 use anyhow::Context as _;
 use arc_swap::ArcSwap;
@@ -10,7 +10,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 
 #[derive(Parser)]
-#[command(name = "spacebot", version)]
+#[command(name = "james", version)]
 #[command(about = "A Rust agentic system with dedicated processes for every task")]
 struct Cli {
     #[command(subcommand)]
@@ -178,11 +178,11 @@ enum SecretsCommand {
 
 /// Tracks an active conversation channel and its message sender.
 struct ActiveChannel {
-    message_tx: mpsc::Sender<spacebot::InboundMessage>,
+    message_tx: mpsc::Sender<james::InboundMessage>,
     /// Latest inbound message for this conversation, shared with the outbound
     /// routing task so status updates (e.g. typing indicators) target the
     /// most recent message rather than the first one the channel ever received.
-    latest_message: Arc<tokio::sync::RwLock<spacebot::InboundMessage>>,
+    latest_message: Arc<tokio::sync::RwLock<james::InboundMessage>>,
     /// Retained so the outbound routing task stays alive.
     _outbound_handle: tokio::task::JoinHandle<()>,
 }
@@ -214,20 +214,20 @@ fn cmd_start(
     debug: bool,
     foreground: bool,
 ) -> anyhow::Result<()> {
-    let paths = spacebot::daemon::DaemonPaths::from_default();
+    let paths = james::daemon::DaemonPaths::from_default();
 
     // Bail if already running
-    if let Some(pid) = spacebot::daemon::is_running(&paths) {
-        eprintln!("spacebot is already running (pid {pid})");
+    if let Some(pid) = james::daemon::is_running(&paths) {
+        eprintln!("james is already running (pid {pid})");
         std::process::exit(1);
     }
 
     // Run onboarding interactively before daemonizing
     let resolved_config_path = if config_path.is_some() {
         config_path.clone()
-    } else if spacebot::config::Config::needs_onboarding() {
+    } else if james::config::Config::needs_onboarding() {
         // Returns Some(path) if CLI wizard ran, None if user chose the UI.
-        spacebot::config::run_onboarding().with_context(|| "onboarding failed")?
+        james::config::run_onboarding().with_context(|| "onboarding failed")?
     } else {
         None
     };
@@ -246,8 +246,8 @@ fn cmd_start(
         // the child (Tokio's I/O driver and thread pool don't survive fork),
         // which is why tracing init (and the OTLP batch exporter it creates)
         // must happen *after* this call.
-        let paths = spacebot::daemon::DaemonPaths::new(&config.instance_dir);
-        spacebot::daemon::daemonize(&paths)?;
+        let paths = james::daemon::DaemonPaths::new(&config.instance_dir);
+        james::daemon::daemonize(&paths)?;
     }
 
     // Build a fresh Tokio runtime in this process (the child after daemonize,
@@ -262,10 +262,10 @@ fn cmd_start(
 
     runtime.block_on(async {
         let otel_provider = if foreground {
-            spacebot::daemon::init_foreground_tracing(debug, &config.telemetry)
+            james::daemon::init_foreground_tracing(debug, &config.telemetry)
         } else {
-            let paths = spacebot::daemon::DaemonPaths::new(&config.instance_dir);
-            spacebot::daemon::init_background_tracing(&paths, debug, &config.telemetry)
+            let paths = james::daemon::DaemonPaths::new(&config.instance_dir);
+            james::daemon::init_background_tracing(&paths, debug, &config.telemetry)
         };
 
         run(config, foreground, otel_provider, bootstrapped_store).await
@@ -274,18 +274,18 @@ fn cmd_start(
 
 #[tokio::main]
 async fn cmd_stop() -> anyhow::Result<()> {
-    let paths = spacebot::daemon::DaemonPaths::from_default();
+    let paths = james::daemon::DaemonPaths::from_default();
 
-    let Some(pid) = spacebot::daemon::is_running(&paths) else {
-        eprintln!("spacebot is not running");
+    let Some(pid) = james::daemon::is_running(&paths) else {
+        eprintln!("james is not running");
         std::process::exit(1);
     };
 
-    match spacebot::daemon::send_command(&paths, spacebot::daemon::IpcCommand::Shutdown).await {
-        Ok(spacebot::daemon::IpcResponse::Ok) => {
-            eprintln!("stopping spacebot (pid {pid})...");
+    match james::daemon::send_command(&paths, james::daemon::IpcCommand::Shutdown).await {
+        Ok(james::daemon::IpcResponse::Ok) => {
+            eprintln!("stopping james (pid {pid})...");
         }
-        Ok(spacebot::daemon::IpcResponse::Error { message }) => {
+        Ok(james::daemon::IpcResponse::Error { message }) => {
             eprintln!("shutdown failed: {message}");
             std::process::exit(1);
         }
@@ -299,10 +299,10 @@ async fn cmd_stop() -> anyhow::Result<()> {
         }
     }
 
-    if spacebot::daemon::wait_for_exit(pid) {
-        eprintln!("spacebot stopped");
+    if james::daemon::wait_for_exit(pid) {
+        eprintln!("james stopped");
     } else {
-        eprintln!("spacebot did not stop within 10 seconds (pid {pid})");
+        eprintln!("james did not stop within 10 seconds (pid {pid})");
         std::process::exit(1);
     }
 
@@ -311,9 +311,9 @@ async fn cmd_stop() -> anyhow::Result<()> {
 
 /// Stop if running, don't error if not.
 fn cmd_stop_if_running() {
-    let paths = spacebot::daemon::DaemonPaths::from_default();
+    let paths = james::daemon::DaemonPaths::from_default();
 
-    let Some(pid) = spacebot::daemon::is_running(&paths) else {
+    let Some(pid) = james::daemon::is_running(&paths) else {
         return;
     };
 
@@ -325,20 +325,20 @@ fn cmd_stop_if_running() {
     };
 
     runtime.block_on(async {
-        if let Ok(spacebot::daemon::IpcResponse::Ok) =
-            spacebot::daemon::send_command(&paths, spacebot::daemon::IpcCommand::Shutdown).await
+        if let Ok(james::daemon::IpcResponse::Ok) =
+            james::daemon::send_command(&paths, james::daemon::IpcCommand::Shutdown).await
         {
-            eprintln!("stopping spacebot (pid {pid})...");
-            spacebot::daemon::wait_for_exit(pid);
+            eprintln!("stopping james (pid {pid})...");
+            james::daemon::wait_for_exit(pid);
         }
     });
 }
 
 fn cmd_status() -> anyhow::Result<()> {
-    let paths = spacebot::daemon::DaemonPaths::from_default();
+    let paths = james::daemon::DaemonPaths::from_default();
 
-    let Some(_pid) = spacebot::daemon::is_running(&paths) else {
-        eprintln!("spacebot is not running");
+    let Some(_pid) = james::daemon::is_running(&paths) else {
+        eprintln!("james is not running");
         std::process::exit(1);
     };
 
@@ -348,19 +348,19 @@ fn cmd_status() -> anyhow::Result<()> {
         .context("failed to build tokio runtime")?;
 
     runtime.block_on(async {
-        match spacebot::daemon::send_command(&paths, spacebot::daemon::IpcCommand::Status).await {
-            Ok(spacebot::daemon::IpcResponse::Status {
+        match james::daemon::send_command(&paths, james::daemon::IpcCommand::Status).await {
+            Ok(james::daemon::IpcResponse::Status {
                 pid,
                 uptime_seconds,
             }) => {
                 let hours = uptime_seconds / 3600;
                 let minutes = (uptime_seconds % 3600) / 60;
                 let seconds = uptime_seconds % 60;
-                eprintln!("spacebot is running");
+                eprintln!("james is running");
                 eprintln!("  pid:    {pid}");
                 eprintln!("  uptime: {hours}h {minutes}m {seconds}s");
             }
-            Ok(spacebot::daemon::IpcResponse::Error { message }) => {
+            Ok(james::daemon::IpcResponse::Error { message }) => {
                 eprintln!("status query failed: {message}");
                 std::process::exit(1);
             }
@@ -385,7 +385,7 @@ fn cmd_auth(config_path: Option<std::path::PathBuf>, auth_cmd: AuthCommand) -> a
     let instance_dir = if let Ok(config) = load_config(&config_path) {
         config.instance_dir
     } else {
-        spacebot::config::Config::default_instance_dir()
+        james::config::Config::default_instance_dir()
     };
 
     // Ensure instance dir exists
@@ -400,15 +400,15 @@ fn cmd_auth(config_path: Option<std::path::PathBuf>, auth_cmd: AuthCommand) -> a
         match auth_cmd {
             AuthCommand::Login { console } => {
                 let mode = if console {
-                    spacebot::auth::AuthMode::Console
+                    james::auth::AuthMode::Console
                 } else {
-                    spacebot::auth::AuthMode::Max
+                    james::auth::AuthMode::Max
                 };
-                spacebot::auth::login_interactive(&instance_dir, mode).await?;
+                james::auth::login_interactive(&instance_dir, mode).await?;
                 Ok(())
             }
             AuthCommand::Status => {
-                match spacebot::auth::load_credentials(&instance_dir)? {
+                match james::auth::load_credentials(&instance_dir)? {
                     Some(creds) => {
                         let expires_in = creds.expires_at - chrono::Utc::now().timestamp_millis();
                         let expires_min = expires_in / 60_000;
@@ -421,18 +421,18 @@ fn cmd_auth(config_path: Option<std::path::PathBuf>, auth_cmd: AuthCommand) -> a
                         eprintln!("  refresh token: {}...", &creds.refresh_token[..20]);
                         eprintln!(
                             "  credentials file: {}",
-                            spacebot::auth::credentials_path(&instance_dir).display()
+                            james::auth::credentials_path(&instance_dir).display()
                         );
                     }
                     None => {
                         eprintln!("No OAuth credentials found.");
-                        eprintln!("Run `spacebot auth login` to authenticate.");
+                        eprintln!("Run `james auth login` to authenticate.");
                     }
                 }
                 Ok(())
             }
             AuthCommand::Logout => {
-                let path = spacebot::auth::credentials_path(&instance_dir);
+                let path = james::auth::credentials_path(&instance_dir);
                 if path.exists() {
                     std::fs::remove_file(&path)?;
                     eprintln!("Credentials removed.");
@@ -442,11 +442,11 @@ fn cmd_auth(config_path: Option<std::path::PathBuf>, auth_cmd: AuthCommand) -> a
                 Ok(())
             }
             AuthCommand::Refresh => {
-                let creds = spacebot::auth::load_credentials(&instance_dir)?
-                    .context("no credentials found — run `spacebot auth login` first")?;
+                let creds = james::auth::load_credentials(&instance_dir)?
+                    .context("no credentials found — run `james auth login` first")?;
                 eprintln!("Refreshing access token...");
                 let new_creds = creds.refresh().await.context("refresh failed")?;
-                spacebot::auth::save_credentials(&instance_dir, &new_creds)?;
+                james::auth::save_credentials(&instance_dir, &new_creds)?;
                 let expires_min =
                     (new_creds.expires_at - chrono::Utc::now().timestamp_millis()) / 60_000;
                 eprintln!("Token refreshed (expires in {}m)", expires_min);
@@ -878,7 +878,7 @@ async fn secrets_api_get(
     let response = secrets_api_request(client, reqwest::Method::GET, api_base, auth_token, path)
         .send()
         .await
-        .context("failed to connect to spacebot API — is the daemon running?")?;
+        .context("failed to connect to james API — is the daemon running?")?;
     Ok(response)
 }
 
@@ -893,7 +893,7 @@ async fn secrets_api_post(
         .json(body)
         .send()
         .await
-        .context("failed to connect to spacebot API — is the daemon running?")?;
+        .context("failed to connect to james API — is the daemon running?")?;
     Ok(response)
 }
 
@@ -908,7 +908,7 @@ async fn secrets_api_put(
         .json(body)
         .send()
         .await
-        .context("failed to connect to spacebot API — is the daemon running?")?;
+        .context("failed to connect to james API — is the daemon running?")?;
     Ok(response)
 }
 
@@ -921,7 +921,7 @@ async fn secrets_api_delete(
     let response = secrets_api_request(client, reqwest::Method::DELETE, api_base, auth_token, path)
         .send()
         .await
-        .context("failed to connect to spacebot API — is the daemon running?")?;
+        .context("failed to connect to james API — is the daemon running?")?;
     Ok(response)
 }
 
@@ -948,7 +948,7 @@ fn cmd_skill(
                 println!("Installing skill from: {spec}");
                 println!("Target directory: {}", target_dir.display());
 
-                let installed = spacebot::skills::install_from_github(&spec, &target_dir)
+                let installed = james::skills::install_from_github(&spec, &target_dir)
                     .await
                     .context("failed to install skill")?;
 
@@ -969,7 +969,7 @@ fn cmd_skill(
                 println!("Installing skill from: {}", path.display());
                 println!("Target directory: {}", target_dir.display());
 
-                let installed = spacebot::skills::install_from_file(&path, &target_dir)
+                let installed = james::skills::install_from_file(&path, &target_dir)
                     .await
                     .context("failed to install skill")?;
 
@@ -983,7 +983,7 @@ fn cmd_skill(
             SkillCommand::List { agent } => {
                 let (instance_dir, workspace_dir) = resolve_skill_dirs(&config, agent.as_deref())?;
 
-                let skills = spacebot::skills::SkillSet::load(&instance_dir, &workspace_dir).await;
+                let skills = james::skills::SkillSet::load(&instance_dir, &workspace_dir).await;
 
                 if skills.is_empty() {
                     println!("No skills installed");
@@ -994,8 +994,8 @@ fn cmd_skill(
 
                 for info in skills.list() {
                     let source_label = match info.source {
-                        spacebot::skills::SkillSource::Instance => "instance",
-                        spacebot::skills::SkillSource::Workspace => "workspace",
+                        james::skills::SkillSource::Instance => "instance",
+                        james::skills::SkillSource::Workspace => "workspace",
                     };
 
                     println!("  {} ({})", info.name, source_label);
@@ -1010,8 +1010,7 @@ fn cmd_skill(
             SkillCommand::Remove { name, agent } => {
                 let (instance_dir, workspace_dir) = resolve_skill_dirs(&config, agent.as_deref())?;
 
-                let mut skills =
-                    spacebot::skills::SkillSet::load(&instance_dir, &workspace_dir).await;
+                let mut skills = james::skills::SkillSet::load(&instance_dir, &workspace_dir).await;
 
                 match skills.remove(&name).await? {
                     Some(path) => {
@@ -1029,7 +1028,7 @@ fn cmd_skill(
             SkillCommand::Info { name, agent } => {
                 let (instance_dir, workspace_dir) = resolve_skill_dirs(&config, agent.as_deref())?;
 
-                let skills = spacebot::skills::SkillSet::load(&instance_dir, &workspace_dir).await;
+                let skills = james::skills::SkillSet::load(&instance_dir, &workspace_dir).await;
 
                 let Some(skill) = skills.get(&name) else {
                     eprintln!("Skill not found: {name}");
@@ -1037,8 +1036,8 @@ fn cmd_skill(
                 };
 
                 let source_label = match skill.source {
-                    spacebot::skills::SkillSource::Instance => "instance",
-                    spacebot::skills::SkillSource::Workspace => "workspace",
+                    james::skills::SkillSource::Instance => "instance",
+                    james::skills::SkillSource::Workspace => "workspace",
                 };
 
                 println!("Skill: {}", skill.name);
@@ -1068,7 +1067,7 @@ fn cmd_skill(
 }
 
 fn resolve_skills_dir(
-    config: &spacebot::config::Config,
+    config: &james::config::Config,
     agent_id: Option<&str>,
     instance: bool,
 ) -> anyhow::Result<std::path::PathBuf> {
@@ -1082,7 +1081,7 @@ fn resolve_skills_dir(
 }
 
 fn resolve_skill_dirs(
-    config: &spacebot::config::Config,
+    config: &james::config::Config,
     agent_id: Option<&str>,
 ) -> anyhow::Result<(std::path::PathBuf, std::path::PathBuf)> {
     let agent_config = get_agent_config(config, agent_id)?;
@@ -1091,9 +1090,9 @@ fn resolve_skill_dirs(
 }
 
 fn get_agent_config<'a>(
-    config: &'a spacebot::config::Config,
+    config: &'a james::config::Config,
     agent_id: Option<&str>,
-) -> anyhow::Result<&'a spacebot::config::AgentConfig> {
+) -> anyhow::Result<&'a james::config::AgentConfig> {
     let agent_id = match agent_id {
         Some(id) => id,
         None => {
@@ -1111,14 +1110,12 @@ fn get_agent_config<'a>(
         .with_context(|| format!("agent not found: {agent_id}"))
 }
 
-fn load_config(
-    config_path: &Option<std::path::PathBuf>,
-) -> anyhow::Result<spacebot::config::Config> {
+fn load_config(config_path: &Option<std::path::PathBuf>) -> anyhow::Result<james::config::Config> {
     if let Some(path) = config_path {
-        spacebot::config::Config::load_from_path(path)
+        james::config::Config::load_from_path(path)
             .with_context(|| format!("failed to load config from {}", path.display()))
     } else {
-        spacebot::config::Config::load().with_context(|| "failed to load configuration")
+        james::config::Config::load().with_context(|| "failed to load configuration")
     }
 }
 
@@ -1143,18 +1140,18 @@ const KEYSTORE_INSTANCE_ID: &str = "instance";
 /// per-agent model), secrets are migrated from the first non-empty agent store.
 fn bootstrap_secrets_store(
     config_path: &Option<std::path::PathBuf>,
-) -> Option<Arc<spacebot::secrets::store::SecretsStore>> {
+) -> Option<Arc<james::secrets::store::SecretsStore>> {
     // Probe kernel keyring support before any workers spawn. If keyctl is
     // blocked (restrictive seccomp, gVisor, etc.), worker keyring isolation
     // is disabled but workers still start normally.
-    spacebot::secrets::keystore::probe_keyring_support();
+    james::secrets::keystore::probe_keyring_support();
 
     let instance_dir = if let Some(path) = config_path {
         path.parent()
             .map(|p| p.to_path_buf())
             .unwrap_or_else(|| std::path::PathBuf::from("."))
     } else {
-        spacebot::config::Config::default_instance_dir()
+        james::config::Config::default_instance_dir()
     };
 
     let data_dir = instance_dir.join("data");
@@ -1166,7 +1163,7 @@ fn bootstrap_secrets_store(
     let secrets_path = data_dir.join("secrets.redb");
     let is_new_store = !secrets_path.exists();
 
-    let store = match spacebot::secrets::store::SecretsStore::new(&secrets_path) {
+    let store = match james::secrets::store::SecretsStore::new(&secrets_path) {
         Ok(store) => Arc::new(store),
         Err(error) => {
             eprintln!("warning: failed to open secrets store: {error}");
@@ -1181,10 +1178,10 @@ fn bootstrap_secrets_store(
 
     // Try to auto-unlock if encrypted.
     if store.is_encrypted() {
-        let keystore = spacebot::secrets::keystore::platform_keystore();
+        let keystore = james::secrets::keystore::platform_keystore();
 
         // Hosted: check tmpfs-injected key.
-        let tmpfs_key_path = std::path::Path::new("/run/spacebot/master_key");
+        let tmpfs_key_path = std::path::Path::new("/run/james/master_key");
         let master_key = if tmpfs_key_path.exists() {
             std::fs::read(tmpfs_key_path).ok().inspect(|key| {
                 if let Err(error) = std::fs::remove_file(tmpfs_key_path) {
@@ -1211,7 +1208,7 @@ fn bootstrap_secrets_store(
     }
 
     // Set the store into the thread-local for config resolution.
-    spacebot::config::set_resolve_secrets_store(store.clone());
+    james::config::set_resolve_secrets_store(store.clone());
 
     Some(store)
 }
@@ -1220,7 +1217,7 @@ fn bootstrap_secrets_store(
 /// store. Only runs once when the instance-level store is first created.
 fn migrate_legacy_agent_stores(
     instance_dir: &std::path::Path,
-    target_store: &spacebot::secrets::store::SecretsStore,
+    target_store: &james::secrets::store::SecretsStore,
 ) {
     let agents_dir = instance_dir.join("agents");
     let entries = match std::fs::read_dir(&agents_dir) {
@@ -1240,7 +1237,7 @@ fn migrate_legacy_agent_stores(
         }
 
         // Open the legacy agent store (read-only access).
-        let legacy_store = match spacebot::secrets::store::SecretsStore::new(&secrets_path) {
+        let legacy_store = match james::secrets::store::SecretsStore::new(&secrets_path) {
             Ok(store) => store,
             Err(_) => continue,
         };
@@ -1248,7 +1245,7 @@ fn migrate_legacy_agent_stores(
         // If the legacy store is encrypted, try to unlock it with OS keystore.
         if legacy_store.is_encrypted() {
             let agent_id = entry.file_name().to_string_lossy().to_string();
-            let keystore = spacebot::secrets::keystore::platform_keystore();
+            let keystore = james::secrets::keystore::platform_keystore();
             if let Some(key) = keystore.load_key(&agent_id).ok().flatten() {
                 let _ = legacy_store.unlock(&key);
             } else {
@@ -1288,7 +1285,7 @@ fn migrate_legacy_agent_stores(
 fn load_legacy_keystore_key(instance_dir: &std::path::Path) -> Option<Vec<u8>> {
     let agents_dir = instance_dir.join("agents");
     let entries = std::fs::read_dir(&agents_dir).ok()?;
-    let keystore = spacebot::secrets::keystore::platform_keystore();
+    let keystore = james::secrets::keystore::platform_keystore();
 
     for entry in entries.flatten() {
         if !entry.file_type().is_ok_and(|ft| ft.is_dir()) {
@@ -1305,49 +1302,49 @@ fn load_legacy_keystore_key(instance_dir: &std::path::Path) -> Option<Vec<u8>> {
 }
 
 fn has_provider_credentials(
-    llm_config: &spacebot::config::LlmConfig,
+    llm_config: &james::config::LlmConfig,
     instance_dir: &std::path::Path,
 ) -> bool {
     llm_config.has_any_key()
-        || spacebot::auth::credentials_path(instance_dir).exists()
-        || spacebot::openai_auth::credentials_path(instance_dir).exists()
+        || james::auth::credentials_path(instance_dir).exists()
+        || james::openai_auth::credentials_path(instance_dir).exists()
 }
 
 async fn run(
-    config: spacebot::config::Config,
+    config: james::config::Config,
     foreground: bool,
     otel_provider: Option<opentelemetry_sdk::trace::SdkTracerProvider>,
-    bootstrapped_store: Option<Arc<spacebot::secrets::store::SecretsStore>>,
+    bootstrapped_store: Option<Arc<james::secrets::store::SecretsStore>>,
 ) -> anyhow::Result<()> {
-    let paths = spacebot::daemon::DaemonPaths::new(&config.instance_dir);
+    let paths = james::daemon::DaemonPaths::new(&config.instance_dir);
 
-    tracing::info!("starting spacebot");
+    tracing::info!("starting james");
     tracing::info!(instance_dir = %config.instance_dir.display(), "configuration loaded");
 
     // Start the IPC server for stop/status commands
-    let (mut shutdown_rx, _ipc_handle) = spacebot::daemon::start_ipc_server(&paths)
+    let (mut shutdown_rx, _ipc_handle) = james::daemon::start_ipc_server(&paths)
         .await
         .context("failed to start IPC server")?;
 
     // Create the provider setup channel so API handlers can signal the main loop
-    let (provider_tx, mut provider_rx) = mpsc::channel::<spacebot::ProviderSetupEvent>(1);
+    let (provider_tx, mut provider_rx) = mpsc::channel::<james::ProviderSetupEvent>(1);
     // Channel for newly created agents to be registered in the main event loop
-    let (agent_tx, mut agent_rx) = mpsc::channel::<spacebot::Agent>(8);
+    let (agent_tx, mut agent_rx) = mpsc::channel::<james::Agent>(8);
     // Channel for removing agents from the main event loop
     let (agent_remove_tx, mut agent_remove_rx) = mpsc::channel::<String>(8);
 
     // Channel for cross-agent message injection (e.g. delegated task completion notifications).
     // The sender is shared with all agents via AgentDeps; the receiver is polled in the main loop.
     let (injection_tx, mut injection_rx) =
-        tokio::sync::mpsc::channel::<spacebot::ChannelInjection>(64);
+        tokio::sync::mpsc::channel::<james::ChannelInjection>(64);
 
     // Shared cross-agent task store registry. Populated after all agents are initialized.
     let task_store_registry: Arc<
-        ArcSwap<std::collections::HashMap<String, Arc<spacebot::tasks::TaskStore>>>,
+        ArcSwap<std::collections::HashMap<String, Arc<james::tasks::TaskStore>>>,
     > = Arc::new(ArcSwap::from_pointee(std::collections::HashMap::new()));
 
     // Start HTTP API server if enabled
-    let mut api_state = spacebot::api::ApiState::new_with_provider_sender(
+    let mut api_state = james::api::ApiState::new_with_provider_sender(
         provider_tx,
         agent_tx,
         agent_remove_tx,
@@ -1358,13 +1355,13 @@ async fn run(
     let api_state = Arc::new(api_state);
 
     // Start background update checker
-    spacebot::update::spawn_update_checker(api_state.update_status.clone());
+    james::update::spawn_update_checker(api_state.update_status.clone());
 
     // Start metrics server if enabled (requires `metrics` cargo feature)
     #[cfg(feature = "metrics")]
     let _metrics_handle = if config.metrics.enabled {
         Some(
-            spacebot::telemetry::start_metrics_server(&config.metrics, shutdown_rx.clone())
+            james::telemetry::start_metrics_server(&config.metrics, shutdown_rx.clone())
                 .await
                 .context("failed to start metrics server")?,
         )
@@ -1387,7 +1384,7 @@ async fn run(
         let bind: std::net::SocketAddr = bind_str.parse().context("invalid API bind address")?;
         let http_shutdown = shutdown_rx.clone();
         Some(
-            spacebot::api::start_http_server(bind, api_state.clone(), http_shutdown)
+            james::api::start_http_server(bind, api_state.clone(), http_shutdown)
                 .await
                 .context("failed to start HTTP server")?,
         )
@@ -1413,50 +1410,47 @@ async fn run(
     // This works even without keys; it will fail later at call time if no keys exist.
     // Loads OAuth credentials from auth.json if available.
     let llm_manager = Arc::new(
-        spacebot::llm::LlmManager::with_instance_dir(
-            config.llm.clone(),
-            config.instance_dir.clone(),
-        )
-        .await
-        .with_context(|| "failed to initialize LLM manager")?,
+        james::llm::LlmManager::with_instance_dir(config.llm.clone(), config.instance_dir.clone())
+            .await
+            .with_context(|| "failed to initialize LLM manager")?,
     );
 
     // Shared embedding model (stateless, agent-agnostic)
     let embedding_cache_dir = config.instance_dir.join("embedding_cache");
     let embedding_model = Arc::new(
-        spacebot::memory::EmbeddingModel::new(&embedding_cache_dir)
+        james::memory::EmbeddingModel::new(&embedding_cache_dir)
             .context("failed to initialize embedding model")?,
     );
 
     tracing::info!("shared resources initialized");
 
     // Initialize the language for all text lookups (must happen before PromptEngine/tools)
-    spacebot::prompts::text::init("en").with_context(|| "failed to initialize language")?;
+    james::prompts::text::init("en").with_context(|| "failed to initialize language")?;
 
     // Create the PromptEngine with bundled templates (no file watching, no user overrides)
-    let prompt_engine = spacebot::prompts::PromptEngine::new("en")
+    let prompt_engine = james::prompts::PromptEngine::new("en")
         .with_context(|| "failed to initialize prompt engine")?;
 
     // Parse config links into shared agent links (hot-reloadable via ArcSwap)
-    let agent_links = Arc::new(ArcSwap::from_pointee(
-        spacebot::links::AgentLink::from_config(&config.links)?,
-    ));
+    let agent_links = Arc::new(ArcSwap::from_pointee(james::links::AgentLink::from_config(
+        &config.links,
+    )?));
     if !config.links.is_empty() {
         tracing::info!(count = config.links.len(), "loaded agent links from config");
     }
 
     // These hold the initialized subsystems. Empty until agents are initialized.
-    let mut agents: HashMap<spacebot::AgentId, spacebot::Agent> = HashMap::new();
-    let mut messaging_manager: Arc<spacebot::messaging::MessagingManager> =
-        Arc::new(spacebot::messaging::MessagingManager::new());
+    let mut agents: HashMap<james::AgentId, james::Agent> = HashMap::new();
+    let mut messaging_manager: Arc<james::messaging::MessagingManager> =
+        Arc::new(james::messaging::MessagingManager::new());
     // Use an Option to represent "no inbound stream yet" (setup mode)
     let mut inbound_stream: Option<
-        std::pin::Pin<Box<dyn futures::Stream<Item = spacebot::InboundMessage> + Send>>,
+        std::pin::Pin<Box<dyn futures::Stream<Item = james::InboundMessage> + Send>>,
     > = None;
-    let mut cron_schedulers_for_shutdown: Vec<Arc<spacebot::cron::Scheduler>> = Vec::new();
+    let mut cron_schedulers_for_shutdown: Vec<Arc<james::cron::Scheduler>> = Vec::new();
     let mut _ingestion_handles: Vec<tokio::task::JoinHandle<()>> = Vec::new();
     let mut _cortex_handles: Vec<tokio::task::JoinHandle<()>> = Vec::new();
-    let bindings: Arc<ArcSwap<Vec<spacebot::config::Binding>>> =
+    let bindings: Arc<ArcSwap<Vec<james::config::Binding>>> =
         Arc::new(ArcSwap::from_pointee(config.bindings.clone()));
     api_state.set_bindings(bindings.clone()).await;
     let default_agent_id = config.default_agent_id().to_string();
@@ -1512,7 +1506,7 @@ async fn run(
         agents_initialized = true;
 
         // Start file watcher with populated agent data
-        _file_watcher = spacebot::config::spawn_file_watcher(
+        _file_watcher = james::config::spawn_file_watcher(
             config_path.clone(),
             config.instance_dir.clone(),
             watcher_agents,
@@ -1527,7 +1521,7 @@ async fn run(
         );
     } else {
         // Start file watcher in setup mode (no agents to watch yet)
-        _file_watcher = spacebot::config::spawn_file_watcher(
+        _file_watcher = james::config::spawn_file_watcher(
             config_path.clone(),
             config.instance_dir.clone(),
             Vec::new(),
@@ -1543,12 +1537,9 @@ async fn run(
     }
 
     if foreground {
-        eprintln!(
-            "spacebot running in foreground (pid {})",
-            std::process::id()
-        );
+        eprintln!("james running in foreground (pid {})", std::process::id());
     } else {
-        tracing::info!(pid = std::process::id(), "spacebot daemon started");
+        tracing::info!(pid = std::process::id(), "james daemon started");
     }
 
     // Active conversation channels: conversation_id -> ActiveChannel
@@ -1569,7 +1560,7 @@ async fn run(
                     existing.clone()
                 } else {
                     let current_bindings = bindings.load();
-                    let resolved = spacebot::config::resolve_agent_for_message(
+                    let resolved = james::config::resolve_agent_for_message(
                         &current_bindings,
                         &message,
                         &default_agent_id,
@@ -1592,14 +1583,14 @@ async fn run(
                     };
 
                     // Create outbound response channel
-                    let (response_tx, mut response_rx) = mpsc::channel::<spacebot::OutboundResponse>(32);
+                    let (response_tx, mut response_rx) = mpsc::channel::<james::OutboundResponse>(32);
 
                     // Subscribe to the agent's event bus
                     let event_rx = agent.deps.event_tx.subscribe();
 
-                    let channel_id: spacebot::ChannelId = Arc::from(conversation_id.as_str());
+                    let channel_id: james::ChannelId = Arc::from(conversation_id.as_str());
 
-                    let (channel, channel_tx) = spacebot::agent::channel::Channel::new(
+                    let (channel, channel_tx) = james::agent::channel::Channel::new(
                         channel_id,
                         agent.deps.clone(),
                         response_tx,
@@ -1673,36 +1664,36 @@ async fn run(
                         while let Some(response) = response_rx.recv().await {
                             // Forward relevant events to SSE clients
                             match &response {
-                                spacebot::OutboundResponse::Text(text) => {
-                                    api_event_tx.send(spacebot::api::ApiEvent::OutboundMessage {
+                                james::OutboundResponse::Text(text) => {
+                                    api_event_tx.send(james::api::ApiEvent::OutboundMessage {
                                         agent_id: sse_agent_id.clone(),
                                         channel_id: sse_channel_id.clone(),
                                         text: text.clone(),
                                     }).ok();
                                 }
-                                spacebot::OutboundResponse::RichMessage { text, .. } => {
-                                    api_event_tx.send(spacebot::api::ApiEvent::OutboundMessage {
+                                james::OutboundResponse::RichMessage { text, .. } => {
+                                    api_event_tx.send(james::api::ApiEvent::OutboundMessage {
                                         agent_id: sse_agent_id.clone(),
                                         channel_id: sse_channel_id.clone(),
                                         text: text.clone(),
                                     }).ok();
                                 }
-                                spacebot::OutboundResponse::ThreadReply { text, .. } => {
-                                    api_event_tx.send(spacebot::api::ApiEvent::OutboundMessage {
+                                james::OutboundResponse::ThreadReply { text, .. } => {
+                                    api_event_tx.send(james::api::ApiEvent::OutboundMessage {
                                         agent_id: sse_agent_id.clone(),
                                         channel_id: sse_channel_id.clone(),
                                         text: text.clone(),
                                     }).ok();
                                 }
-                                spacebot::OutboundResponse::Status(spacebot::StatusUpdate::Thinking) => {
-                                    api_event_tx.send(spacebot::api::ApiEvent::TypingState {
+                                james::OutboundResponse::Status(james::StatusUpdate::Thinking) => {
+                                    api_event_tx.send(james::api::ApiEvent::TypingState {
                                         agent_id: sse_agent_id.clone(),
                                         channel_id: sse_channel_id.clone(),
                                         is_typing: true,
                                     }).ok();
                                 }
-                                spacebot::OutboundResponse::Status(spacebot::StatusUpdate::StopTyping) => {
-                                    api_event_tx.send(spacebot::api::ApiEvent::TypingState {
+                                james::OutboundResponse::Status(james::StatusUpdate::StopTyping) => {
+                                    api_event_tx.send(james::api::ApiEvent::TypingState {
                                         agent_id: sse_agent_id.clone(),
                                         channel_id: sse_channel_id.clone(),
                                         is_typing: false,
@@ -1714,7 +1705,7 @@ async fn run(
                             let current_message = outbound_message.read().await.clone();
 
                             match response {
-                                spacebot::OutboundResponse::Status(status) => {
+                                james::OutboundResponse::Status(status) => {
                                     if let Err(error) = messaging_for_outbound
                                         .send_status(&current_message, status)
                                         .await
@@ -1765,7 +1756,7 @@ async fn run(
                             .and_then(|v| v.as_str())
                             .map(|s| s.to_string())
                     });
-                    api_state.event_tx.send(spacebot::api::ApiEvent::InboundMessage {
+                    api_state.event_tx.send(james::api::ApiEvent::InboundMessage {
                         agent_id: agent_id.to_string(),
                         channel_id: conversation_id.clone(),
                         sender_name,
@@ -1788,7 +1779,7 @@ async fn run(
                 agents.insert(agent.id.clone(), agent);
             }
             Some(agent_id) = agent_remove_rx.recv() => {
-                let key: spacebot::AgentId = Arc::from(agent_id.as_str());
+                let key: james::AgentId = Arc::from(agent_id.as_str());
                 if let Some(agent) = agents.remove(&key) {
                     agent.deps.mcp_manager.disconnect_all().await;
                     tracing::info!(agent_id = %agent_id, "removed agent from main loop");
@@ -1827,12 +1818,12 @@ async fn run(
 
                 // Reload config from disk to pick up new keys
                 let new_config = if config_path.exists() {
-                    spacebot::config::Config::load_from_path(&config_path)
+                    james::config::Config::load_from_path(&config_path)
                 } else {
                     let instance_dir = config_path.parent()
                         .map(|p| p.to_path_buf())
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    spacebot::config::Config::load_from_env(&instance_dir)
+                    james::config::Config::load_from_env(&instance_dir)
                 };
 
                 match new_config {
@@ -1844,7 +1835,7 @@ async fn run(
                         api_state.set_defaults_config(new_config.defaults.clone()).await;
 
                         // Rebuild LlmManager with the new keys
-                        match spacebot::llm::LlmManager::with_instance_dir(
+                        match james::llm::LlmManager::with_instance_dir(
                             new_config.llm.clone(),
                             new_config.instance_dir.clone(),
                         )
@@ -1882,7 +1873,7 @@ async fn run(
                                     Ok(()) => {
                                         agents_initialized = true;
                                         // Restart file watcher with the new agent data
-                                        _file_watcher = spacebot::config::spawn_file_watcher(
+                                        _file_watcher = james::config::spawn_file_watcher(
                                             config_path.clone(),
                                             new_config.instance_dir.clone(),
                                             new_watcher_agents,
@@ -1942,7 +1933,7 @@ async fn run(
         agent.db.close().await;
     }
 
-    tracing::info!("spacebot stopped");
+    tracing::info!("james stopped");
 
     // Flush buffered OTLP spans before the process exits. Without this the
     // batch exporter drops any spans recorded in the last export interval.
@@ -1952,7 +1943,7 @@ async fn run(
         tracing::warn!(%error, "failed to flush OTel spans on shutdown");
     }
 
-    spacebot::daemon::cleanup(&paths);
+    james::daemon::cleanup(&paths);
 
     // Force exit — detached tasks (e.g. the serenity gateway client) may keep
     // the tokio runtime alive after all owned resources have been cleaned up.
@@ -1987,35 +1978,35 @@ async fn wait_for_startup_warmup_tasks(
 
 #[allow(clippy::too_many_arguments)]
 async fn initialize_agents(
-    config: &spacebot::config::Config,
-    llm_manager: &Arc<spacebot::llm::LlmManager>,
-    embedding_model: &Arc<spacebot::memory::EmbeddingModel>,
-    prompt_engine: &spacebot::prompts::PromptEngine,
-    api_state: &Arc<spacebot::api::ApiState>,
-    agents: &mut HashMap<spacebot::AgentId, spacebot::Agent>,
-    messaging_manager: &mut Arc<spacebot::messaging::MessagingManager>,
+    config: &james::config::Config,
+    llm_manager: &Arc<james::llm::LlmManager>,
+    embedding_model: &Arc<james::memory::EmbeddingModel>,
+    prompt_engine: &james::prompts::PromptEngine,
+    api_state: &Arc<james::api::ApiState>,
+    agents: &mut HashMap<james::AgentId, james::Agent>,
+    messaging_manager: &mut Arc<james::messaging::MessagingManager>,
     inbound_stream: &mut Option<
-        std::pin::Pin<Box<dyn futures::Stream<Item = spacebot::InboundMessage> + Send>>,
+        std::pin::Pin<Box<dyn futures::Stream<Item = james::InboundMessage> + Send>>,
     >,
-    cron_schedulers_for_shutdown: &mut Vec<Arc<spacebot::cron::Scheduler>>,
+    cron_schedulers_for_shutdown: &mut Vec<Arc<james::cron::Scheduler>>,
     ingestion_handles: &mut Vec<tokio::task::JoinHandle<()>>,
     cortex_handles: &mut Vec<tokio::task::JoinHandle<()>>,
     watcher_agents: &mut Vec<(
         String,
         std::path::PathBuf,
-        Arc<spacebot::config::RuntimeConfig>,
-        Arc<spacebot::mcp::McpManager>,
+        Arc<james::config::RuntimeConfig>,
+        Arc<james::mcp::McpManager>,
     )>,
-    discord_permissions: &mut Option<Arc<ArcSwap<spacebot::config::DiscordPermissions>>>,
-    slack_permissions: &mut Option<Arc<ArcSwap<spacebot::config::SlackPermissions>>>,
-    telegram_permissions: &mut Option<Arc<ArcSwap<spacebot::config::TelegramPermissions>>>,
-    twitch_permissions: &mut Option<Arc<ArcSwap<spacebot::config::TwitchPermissions>>>,
-    agent_links: Arc<ArcSwap<Vec<spacebot::links::AgentLink>>>,
-    injection_tx: tokio::sync::mpsc::Sender<spacebot::ChannelInjection>,
+    discord_permissions: &mut Option<Arc<ArcSwap<james::config::DiscordPermissions>>>,
+    slack_permissions: &mut Option<Arc<ArcSwap<james::config::SlackPermissions>>>,
+    telegram_permissions: &mut Option<Arc<ArcSwap<james::config::TelegramPermissions>>>,
+    twitch_permissions: &mut Option<Arc<ArcSwap<james::config::TwitchPermissions>>>,
+    agent_links: Arc<ArcSwap<Vec<james::links::AgentLink>>>,
+    injection_tx: tokio::sync::mpsc::Sender<james::ChannelInjection>,
     task_store_registry: Arc<
-        ArcSwap<std::collections::HashMap<String, Arc<spacebot::tasks::TaskStore>>>,
+        ArcSwap<std::collections::HashMap<String, Arc<james::tasks::TaskStore>>>,
     >,
-    bootstrapped_store: &Option<Arc<spacebot::secrets::store::SecretsStore>>,
+    bootstrapped_store: &Option<Arc<james::secrets::store::SecretsStore>>,
 ) -> anyhow::Result<()> {
     let resolved_agents = config.resolve_agents();
 
@@ -2066,7 +2057,7 @@ async fn initialize_agents(
         })?;
 
         // Per-agent database connections
-        let db = spacebot::db::Db::connect(&agent_config.data_dir)
+        let db = james::db::Db::connect(&agent_config.data_dir)
             .await
             .with_context(|| {
                 format!(
@@ -2078,7 +2069,7 @@ async fn initialize_agents(
         // Per-agent settings store (redb-backed)
         let settings_path = agent_config.data_dir.join("settings.redb");
         let settings_store = Arc::new(
-            spacebot::settings::SettingsStore::new(&settings_path).with_context(|| {
+            james::settings::SettingsStore::new(&settings_path).with_context(|| {
                 format!(
                     "failed to initialize settings store for agent '{}'",
                     agent_config.id
@@ -2088,9 +2079,9 @@ async fn initialize_agents(
 
         // Per-agent memory system
         let memory_store =
-            spacebot::memory::MemoryStore::with_agent_id(db.sqlite.clone(), &agent_config.id);
-        let task_store = Arc::new(spacebot::tasks::TaskStore::new(db.sqlite.clone()));
-        let embedding_table = spacebot::memory::EmbeddingTable::open_or_create(&db.lance)
+            james::memory::MemoryStore::with_agent_id(db.sqlite.clone(), &agent_config.id);
+        let task_store = Arc::new(james::tasks::TaskStore::new(db.sqlite.clone()));
+        let embedding_table = james::memory::EmbeddingTable::open_or_create(&db.lance)
             .await
             .with_context(|| {
                 format!("failed to init embeddings for agent '{}'", agent_config.id)
@@ -2101,7 +2092,7 @@ async fn initialize_agents(
             tracing::warn!(%error, agent = %agent_config.id, "failed to create FTS index");
         }
 
-        let memory_search = Arc::new(spacebot::memory::MemorySearch::new(
+        let memory_search = Arc::new(james::memory::MemorySearch::new(
             memory_store,
             embedding_table,
             embedding_model.clone(),
@@ -2110,12 +2101,12 @@ async fn initialize_agents(
         // Per-agent event bus (broadcast for fan-out to multiple channels)
         let (event_tx, _event_rx) = tokio::sync::broadcast::channel(256);
 
-        let agent_id: spacebot::AgentId = Arc::from(agent_config.id.as_str());
-        let mcp_manager = Arc::new(spacebot::mcp::McpManager::new(agent_config.mcp.clone()));
+        let agent_id: james::AgentId = Arc::from(agent_config.id.as_str());
+        let mcp_manager = Arc::new(james::mcp::McpManager::new(agent_config.mcp.clone()));
         mcp_manager.connect_all().await;
 
         // Scaffold identity templates if missing, then load
-        spacebot::identity::scaffold_identity_files(&agent_config.workspace)
+        james::identity::scaffold_identity_files(&agent_config.workspace)
             .await
             .with_context(|| {
                 format!(
@@ -2123,15 +2114,14 @@ async fn initialize_agents(
                     agent_config.id
                 )
             })?;
-        let identity = spacebot::identity::Identity::load(&agent_config.workspace).await;
+        let identity = james::identity::Identity::load(&agent_config.workspace).await;
 
         // Load skills (instance-level, then workspace overrides)
         let skills =
-            spacebot::skills::SkillSet::load(&config.skills_dir(), &agent_config.skills_dir())
-                .await;
+            james::skills::SkillSet::load(&config.skills_dir(), &agent_config.skills_dir()).await;
 
         // Build the RuntimeConfig with all hot-reloadable values
-        let runtime_config = Arc::new(spacebot::config::RuntimeConfig::new(
+        let runtime_config = Arc::new(james::config::RuntimeConfig::new(
             &config.instance_dir,
             agent_config,
             &config.defaults,
@@ -2149,7 +2139,7 @@ async fn initialize_agents(
         // Share the instance-level secrets store with this agent.
         if let Some(secrets_store) = bootstrapped_store {
             runtime_config.set_secrets(secrets_store.clone());
-            spacebot::config::set_resolve_secrets_store(secrets_store.clone());
+            james::config::set_resolve_secrets_store(secrets_store.clone());
         }
 
         watcher_agents.push((
@@ -2160,7 +2150,7 @@ async fn initialize_agents(
         ));
 
         let sandbox = std::sync::Arc::new(
-            spacebot::sandbox::Sandbox::new(
+            james::sandbox::Sandbox::new(
                 runtime_config.sandbox.clone(),
                 agent_config.workspace.clone(),
                 &config.instance_dir,
@@ -2174,7 +2164,7 @@ async fn initialize_agents(
             sandbox.set_secrets_store(secrets_store.clone());
         }
 
-        let deps = spacebot::AgentDeps {
+        let deps = james::AgentDeps {
             agent_id: agent_id.clone(),
             memory_search,
             llm_manager: llm_manager.clone(),
@@ -2192,7 +2182,7 @@ async fn initialize_agents(
             injection_tx: injection_tx.clone(),
         };
 
-        let agent = spacebot::Agent {
+        let agent = james::Agent {
             id: agent_id.clone(),
             config: agent_config.clone(),
             db,
@@ -2205,7 +2195,7 @@ async fn initialize_agents(
 
     // Populate the cross-agent task store registry now that all agents exist.
     {
-        let registry: std::collections::HashMap<String, Arc<spacebot::tasks::TaskStore>> = agents
+        let registry: std::collections::HashMap<String, Arc<james::tasks::TaskStore>> = agents
             .iter()
             .map(|(agent_id, agent)| (agent_id.to_string(), agent.deps.task_store.clone()))
             .collect();
@@ -2224,11 +2214,11 @@ async fn initialize_agents(
             let to_channel = link.channel_id_for(&link.to_agent_id);
 
             if let Some(agent) = agents.get(&Arc::from(link.from_agent_id.as_str())) {
-                let store = spacebot::conversation::ChannelStore::new(agent.db.sqlite.clone());
+                let store = james::conversation::ChannelStore::new(agent.db.sqlite.clone());
                 store.upsert(&from_channel, &empty_meta);
             }
             if let Some(agent) = agents.get(&Arc::from(link.to_agent_id.as_str())) {
-                let store = spacebot::conversation::ChannelStore::new(agent.db.sqlite.clone());
+                let store = james::conversation::ChannelStore::new(agent.db.sqlite.clone());
                 store.upsert(&to_channel, &empty_meta);
             }
         }
@@ -2259,7 +2249,7 @@ async fn initialize_agents(
             agent_workspaces.insert(agent_id.to_string(), agent.config.workspace.clone());
             runtime_configs.insert(agent_id.to_string(), agent.deps.runtime_config.clone());
             sandboxes.insert(agent_id.to_string(), agent.deps.sandbox.clone());
-            agent_configs.push(spacebot::api::AgentInfo {
+            agent_configs.push(james::api::AgentInfo {
                 id: agent.config.id.clone(),
                 display_name: agent.config.display_name.clone(),
                 role: agent.config.role.clone(),
@@ -2296,14 +2286,9 @@ async fn initialize_agents(
             let sqlite_pool = agent.db.sqlite.clone();
             let agent_id = agent_id.clone();
             startup_warmup.spawn(async move {
-                let logger = spacebot::agent::cortex::CortexLogger::new(sqlite_pool);
-                spacebot::agent::cortex::run_warmup_once(
-                    &deps,
-                    &logger,
-                    "startup_pre_adapter",
-                    false,
-                )
-                .await;
+                let logger = james::agent::cortex::CortexLogger::new(sqlite_pool);
+                james::agent::cortex::run_warmup_once(&deps, &logger, "startup_pre_adapter", false)
+                    .await;
                 let status = deps.runtime_config.warmup_status.load().as_ref().clone();
                 tracing::info!(
                     agent_id = %agent_id,
@@ -2330,12 +2315,12 @@ async fn initialize_agents(
     }
 
     // Initialize messaging adapters
-    let new_messaging_manager = spacebot::messaging::MessagingManager::new();
+    let new_messaging_manager = james::messaging::MessagingManager::new();
 
     // Shared Discord permissions (hot-reloadable via file watcher)
     *discord_permissions = config.messaging.discord.as_ref().map(|discord_config| {
         let perms =
-            spacebot::config::DiscordPermissions::from_config(discord_config, &config.bindings);
+            james::config::DiscordPermissions::from_config(discord_config, &config.bindings);
         Arc::new(ArcSwap::from_pointee(perms))
     });
     if let Some(perms) = &*discord_permissions {
@@ -2346,7 +2331,7 @@ async fn initialize_agents(
         && discord_config.enabled
     {
         if !discord_config.token.is_empty() {
-            let adapter = spacebot::messaging::discord::DiscordAdapter::new(
+            let adapter = james::messaging::discord::DiscordAdapter::new(
                 "discord",
                 &discord_config.token,
                 discord_permissions.clone().ok_or_else(|| {
@@ -2365,28 +2350,20 @@ async fn initialize_agents(
                 tracing::warn!(adapter = %instance.name, "skipping enabled discord instance with empty token");
                 continue;
             }
-            let runtime_key = spacebot::config::binding_runtime_adapter_key(
-                "discord",
-                Some(instance.name.as_str()),
-            );
+            let runtime_key =
+                james::config::binding_runtime_adapter_key("discord", Some(instance.name.as_str()));
             let perms = Arc::new(ArcSwap::from_pointee(
-                spacebot::config::DiscordPermissions::from_instance_config(
-                    instance,
-                    &config.bindings,
-                ),
+                james::config::DiscordPermissions::from_instance_config(instance, &config.bindings),
             ));
-            let adapter = spacebot::messaging::discord::DiscordAdapter::new(
-                runtime_key,
-                &instance.token,
-                perms,
-            );
+            let adapter =
+                james::messaging::discord::DiscordAdapter::new(runtime_key, &instance.token, perms);
             new_messaging_manager.register(adapter).await;
         }
     }
 
     // Shared Slack permissions (hot-reloadable via file watcher)
     *slack_permissions = config.messaging.slack.as_ref().map(|slack_config| {
-        let perms = spacebot::config::SlackPermissions::from_config(slack_config, &config.bindings);
+        let perms = james::config::SlackPermissions::from_config(slack_config, &config.bindings);
         Arc::new(ArcSwap::from_pointee(perms))
     });
     if let Some(perms) = &*slack_permissions {
@@ -2397,7 +2374,7 @@ async fn initialize_agents(
         && slack_config.enabled
     {
         if !slack_config.bot_token.is_empty() && !slack_config.app_token.is_empty() {
-            match spacebot::messaging::slack::SlackAdapter::new(
+            match james::messaging::slack::SlackAdapter::new(
                 "slack",
                 &slack_config.bot_token,
                 &slack_config.app_token,
@@ -2424,17 +2401,12 @@ async fn initialize_agents(
                 tracing::warn!(adapter = %instance.name, "skipping enabled slack instance with missing tokens");
                 continue;
             }
-            let runtime_key = spacebot::config::binding_runtime_adapter_key(
-                "slack",
-                Some(instance.name.as_str()),
-            );
+            let runtime_key =
+                james::config::binding_runtime_adapter_key("slack", Some(instance.name.as_str()));
             let perms = Arc::new(ArcSwap::from_pointee(
-                spacebot::config::SlackPermissions::from_instance_config(
-                    instance,
-                    &config.bindings,
-                ),
+                james::config::SlackPermissions::from_instance_config(instance, &config.bindings),
             ));
-            match spacebot::messaging::slack::SlackAdapter::new(
+            match james::messaging::slack::SlackAdapter::new(
                 runtime_key,
                 &instance.bot_token,
                 &instance.app_token,
@@ -2454,7 +2426,7 @@ async fn initialize_agents(
     // Shared Telegram permissions (hot-reloadable via file watcher)
     *telegram_permissions = config.messaging.telegram.as_ref().map(|telegram_config| {
         let perms =
-            spacebot::config::TelegramPermissions::from_config(telegram_config, &config.bindings);
+            james::config::TelegramPermissions::from_config(telegram_config, &config.bindings);
         Arc::new(ArcSwap::from_pointee(perms))
     });
 
@@ -2462,7 +2434,7 @@ async fn initialize_agents(
         && telegram_config.enabled
     {
         if !telegram_config.token.is_empty() {
-            let adapter = spacebot::messaging::telegram::TelegramAdapter::new(
+            let adapter = james::messaging::telegram::TelegramAdapter::new(
                 "telegram",
                 &telegram_config.token,
                 telegram_permissions.clone().ok_or_else(|| {
@@ -2481,17 +2453,17 @@ async fn initialize_agents(
                 tracing::warn!(adapter = %instance.name, "skipping enabled telegram instance with empty token");
                 continue;
             }
-            let runtime_key = spacebot::config::binding_runtime_adapter_key(
+            let runtime_key = james::config::binding_runtime_adapter_key(
                 "telegram",
                 Some(instance.name.as_str()),
             );
             let perms = Arc::new(ArcSwap::from_pointee(
-                spacebot::config::TelegramPermissions::from_instance_config(
+                james::config::TelegramPermissions::from_instance_config(
                     instance,
                     &config.bindings,
                 ),
             ));
-            let adapter = spacebot::messaging::telegram::TelegramAdapter::new(
+            let adapter = james::messaging::telegram::TelegramAdapter::new(
                 runtime_key,
                 &instance.token,
                 perms,
@@ -2504,7 +2476,7 @@ async fn initialize_agents(
         && email_config.enabled
     {
         if !email_config.imap_host.is_empty() {
-            match spacebot::messaging::email::EmailAdapter::from_config(email_config) {
+            match james::messaging::email::EmailAdapter::from_config(email_config) {
                 Ok(adapter) => {
                     new_messaging_manager.register(adapter).await;
                 }
@@ -2523,14 +2495,10 @@ async fn initialize_agents(
                 tracing::warn!(adapter = %instance.name, "skipping enabled email instance with empty credentials");
                 continue;
             }
-            let runtime_key = spacebot::config::binding_runtime_adapter_key(
-                "email",
-                Some(instance.name.as_str()),
-            );
-            match spacebot::messaging::email::EmailAdapter::from_instance_config(
-                runtime_key,
-                instance,
-            ) {
+            let runtime_key =
+                james::config::binding_runtime_adapter_key("email", Some(instance.name.as_str()));
+            match james::messaging::email::EmailAdapter::from_instance_config(runtime_key, instance)
+            {
                 Ok(adapter) => {
                     new_messaging_manager.register(adapter).await;
                 }
@@ -2544,7 +2512,7 @@ async fn initialize_agents(
     if let Some(webhook_config) = &config.messaging.webhook
         && webhook_config.enabled
     {
-        let adapter = spacebot::messaging::webhook::WebhookAdapter::new(
+        let adapter = james::messaging::webhook::WebhookAdapter::new(
             webhook_config.port,
             &webhook_config.bind,
             webhook_config.auth_token.clone(),
@@ -2554,8 +2522,7 @@ async fn initialize_agents(
 
     // Shared Twitch permissions (hot-reloadable via file watcher)
     *twitch_permissions = config.messaging.twitch.as_ref().map(|twitch_config| {
-        let perms =
-            spacebot::config::TwitchPermissions::from_config(twitch_config, &config.bindings);
+        let perms = james::config::TwitchPermissions::from_config(twitch_config, &config.bindings);
         Arc::new(ArcSwap::from_pointee(perms))
     });
 
@@ -2564,7 +2531,7 @@ async fn initialize_agents(
     {
         let twitch_token_path = config.instance_dir.join("twitch_token.json");
         if !twitch_config.username.is_empty() && !twitch_config.oauth_token.is_empty() {
-            let adapter = spacebot::messaging::twitch::TwitchAdapter::new(
+            let adapter = james::messaging::twitch::TwitchAdapter::new(
                 "twitch",
                 &twitch_config.username,
                 &twitch_config.oauth_token,
@@ -2590,10 +2557,8 @@ async fn initialize_agents(
                 tracing::warn!(adapter = %instance.name, "skipping enabled twitch instance with missing credentials");
                 continue;
             }
-            let runtime_key = spacebot::config::binding_runtime_adapter_key(
-                "twitch",
-                Some(instance.name.as_str()),
-            );
+            let runtime_key =
+                james::config::binding_runtime_adapter_key("twitch", Some(instance.name.as_str()));
             let token_file_name = {
                 use std::hash::{Hash, Hasher};
                 let mut hasher = std::collections::hash_map::DefaultHasher::new();
@@ -2610,12 +2575,9 @@ async fn initialize_agents(
             };
             let token_path = config.instance_dir.join(token_file_name);
             let perms = Arc::new(ArcSwap::from_pointee(
-                spacebot::config::TwitchPermissions::from_instance_config(
-                    instance,
-                    &config.bindings,
-                ),
+                james::config::TwitchPermissions::from_instance_config(instance, &config.bindings),
             ));
-            let adapter = spacebot::messaging::twitch::TwitchAdapter::new(
+            let adapter = james::messaging::twitch::TwitchAdapter::new(
                 runtime_key,
                 &instance.username,
                 &instance.oauth_token,
@@ -2635,7 +2597,7 @@ async fn initialize_agents(
         .iter()
         .map(|(agent_id, agent)| (agent_id.to_string(), agent.db.sqlite.clone()))
         .collect();
-    let webchat_adapter = Arc::new(spacebot::messaging::webchat::WebChatAdapter::new(
+    let webchat_adapter = Arc::new(james::messaging::webchat::WebChatAdapter::new(
         webchat_agent_pools,
     ));
     new_messaging_manager
@@ -2662,12 +2624,12 @@ async fn initialize_agents(
     let mut cron_schedulers_map = std::collections::HashMap::new();
 
     for (agent_id, agent) in agents.iter_mut() {
-        let store = Arc::new(spacebot::cron::CronStore::new(agent.db.sqlite.clone()));
+        let store = Arc::new(james::cron::CronStore::new(agent.db.sqlite.clone()));
         agent.deps.messaging_manager = Some(messaging_manager.clone());
 
         // Seed cron jobs from config into the database
         for cron_def in &agent.config.cron {
-            let cron_config = spacebot::cron::CronConfig {
+            let cron_config = james::cron::CronConfig {
                 id: cron_def.id.clone(),
                 prompt: cron_def.prompt.clone(),
                 cron_expr: cron_def.cron_expr.clone(),
@@ -2689,7 +2651,7 @@ async fn initialize_agents(
         }
 
         // Load all enabled cron jobs and start the scheduler
-        let cron_context = spacebot::cron::CronContext {
+        let cron_context = james::cron::CronContext {
             deps: agent.deps.clone(),
             screenshot_dir: agent.config.screenshot_dir(),
             logs_dir: agent.config.logs_dir(),
@@ -2697,7 +2659,7 @@ async fn initialize_agents(
             store: store.clone(),
         };
 
-        let scheduler = Arc::new(spacebot::cron::Scheduler::new(cron_context));
+        let scheduler = Arc::new(james::cron::Scheduler::new(cron_context));
 
         // Make cron store and scheduler available via RuntimeConfig
         agent
@@ -2719,7 +2681,7 @@ async fn initialize_agents(
         }
 
         // Store cron tool on deps so each channel can register it on its own tool server
-        let cron_tool = spacebot::tools::CronTool::new(store.clone(), scheduler.clone());
+        let cron_tool = james::tools::CronTool::new(store.clone(), scheduler.clone());
         agent.deps.cron_tool = Some(cron_tool);
 
         cron_stores_map.insert(agent_id.to_string(), store);
@@ -2737,7 +2699,7 @@ async fn initialize_agents(
     for (agent_id, agent) in agents.iter() {
         let ingestion_config = **agent.deps.runtime_config.ingestion.load();
         if ingestion_config.enabled {
-            let handle = spacebot::agent::ingestion::spawn_ingestion_loop(
+            let handle = james::agent::ingestion::spawn_ingestion_loop(
                 agent.config.ingest_dir(),
                 agent.deps.clone(),
             );
@@ -2748,25 +2710,25 @@ async fn initialize_agents(
 
     // Start cortex warmup, bulletin loops, and association loops for each agent
     for (agent_id, agent) in agents.iter() {
-        let cortex_logger = spacebot::agent::cortex::CortexLogger::new(agent.db.sqlite.clone());
+        let cortex_logger = james::agent::cortex::CortexLogger::new(agent.db.sqlite.clone());
         let warmup_handle =
-            spacebot::agent::cortex::spawn_warmup_loop(agent.deps.clone(), cortex_logger.clone());
+            james::agent::cortex::spawn_warmup_loop(agent.deps.clone(), cortex_logger.clone());
         cortex_handles.push(warmup_handle);
         tracing::info!(agent_id = %agent_id, "warmup loop started");
 
         let bulletin_handle =
-            spacebot::agent::cortex::spawn_bulletin_loop(agent.deps.clone(), cortex_logger.clone());
+            james::agent::cortex::spawn_bulletin_loop(agent.deps.clone(), cortex_logger.clone());
         cortex_handles.push(bulletin_handle);
         tracing::info!(agent_id = %agent_id, "cortex bulletin loop started");
 
         let association_handle =
-            spacebot::agent::cortex::spawn_association_loop(agent.deps.clone(), cortex_logger);
+            james::agent::cortex::spawn_association_loop(agent.deps.clone(), cortex_logger);
         cortex_handles.push(association_handle);
         tracing::info!(agent_id = %agent_id, "cortex association loop started");
 
-        let ready_task_handle = spacebot::agent::cortex::spawn_ready_task_loop(
+        let ready_task_handle = james::agent::cortex::spawn_ready_task_loop(
             agent.deps.clone(),
-            spacebot::agent::cortex::CortexLogger::new(agent.db.sqlite.clone()),
+            james::agent::cortex::CortexLogger::new(agent.db.sqlite.clone()),
         );
         cortex_handles.push(ready_task_handle);
         tracing::info!(agent_id = %agent_id, "cortex ready-task loop started");
@@ -2779,10 +2741,10 @@ async fn initialize_agents(
             let browser_config = (**agent.deps.runtime_config.browser_config.load()).clone();
             let brave_search_key = (**agent.deps.runtime_config.brave_search_key.load()).clone();
             let conversation_logger =
-                spacebot::conversation::history::ConversationLogger::new(agent.db.sqlite.clone());
-            let channel_store = spacebot::conversation::ChannelStore::new(agent.db.sqlite.clone());
-            let run_logger = spacebot::conversation::ProcessRunLogger::new(agent.db.sqlite.clone());
-            let tool_server = spacebot::tools::create_cortex_chat_tool_server(
+                james::conversation::history::ConversationLogger::new(agent.db.sqlite.clone());
+            let channel_store = james::conversation::ChannelStore::new(agent.db.sqlite.clone());
+            let run_logger = james::conversation::ProcessRunLogger::new(agent.db.sqlite.clone());
+            let tool_server = james::tools::create_cortex_chat_tool_server(
                 agent.deps.agent_id.clone(),
                 agent.deps.task_store.clone(),
                 agent.deps.memory_search.clone(),
@@ -2795,8 +2757,8 @@ async fn initialize_agents(
                 agent.deps.runtime_config.workspace_dir.clone(),
                 agent.deps.sandbox.clone(),
             );
-            let store = spacebot::agent::cortex_chat::CortexChatStore::new(agent.db.sqlite.clone());
-            let session = spacebot::agent::cortex_chat::CortexChatSession::new(
+            let store = james::agent::cortex_chat::CortexChatStore::new(agent.db.sqlite.clone());
+            let session = james::agent::cortex_chat::CortexChatSession::new(
                 agent.deps.clone(),
                 tool_server,
                 store,

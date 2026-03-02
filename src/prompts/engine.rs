@@ -166,7 +166,7 @@ impl PromptEngine {
     /// # Example
     /// ```rust,no_run
     /// use minijinja::context;
-    /// # let engine = spacebot::prompts::engine::PromptEngine::new("en")?;
+    /// # let engine = james::prompts::engine::PromptEngine::new("en")?;
     /// let ctx = context! {
     ///     identity_context => "Some identity text",
     ///     browser_enabled => true,

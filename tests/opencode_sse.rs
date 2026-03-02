@@ -1,6 +1,6 @@
 //! Tests for OpenCode SSE event parsing against real captured events.
 
-use spacebot::opencode::types::*;
+use james::opencode::types::*;
 
 /// Parse a raw SSE data line into an SseEvent.
 fn parse_sse_line(line: &str) -> SseEvent {

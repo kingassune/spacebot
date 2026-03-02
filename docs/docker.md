@@ -1,31 +1,31 @@
 # Docker
 
-Run Spacebot in a container. Two image variants: `slim` (no browser) and `full` (includes Chromium for browser workers).
+Run James in a container. Two image variants: `slim` (no browser) and `full` (includes Chromium for browser workers).
 
 ## Quick Start
 
 ```bash
 docker run -d \
-  --name spacebot \
+  --name james \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
-  -v spacebot-data:/data \
+  -v james-data:/data \
   -p 19898:19898 \
-  ghcr.io/spacedriveapp/spacebot:slim
+  ghcr.io/spacedriveapp/james:slim
 ```
 
 The web UI is available at `http://localhost:19898`.
 
 ## Image Variants
 
-### `spacebot:slim`
+### `james:slim`
 
 Minimal runtime. Everything works except the browser tool.
 
 - Base: `debian:bookworm-slim`
 - Size: ~150MB
-- Includes: Spacebot binary, CA certs, SQLite libs, embedded frontend
+- Includes: James binary, CA certs, SQLite libs, embedded frontend
 
-### `spacebot:full`
+### `james:full`
 
 Includes Chromium for browser workers (headless Chrome automation via CDP).
 
@@ -49,7 +49,7 @@ All persistent data lives at `/data` inside the container. Mount a volume here.
 └── logs/                    # log files (daily rotation)
 ```
 
-On first launch with no config, Spacebot creates a default `main` agent with template identity files. The FastEmbed model (~100MB) downloads on first memory operation -- subsequent starts use the cache.
+On first launch with no config, James creates a default `main` agent with template identity files. The FastEmbed model (~100MB) downloads on first memory operation -- subsequent starts use the cache.
 
 ## Configuration
 
@@ -59,12 +59,12 @@ The simplest approach. No config file needed.
 
 ```bash
 docker run -d \
-  --name spacebot \
+  --name james \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
   -e DISCORD_BOT_TOKEN="..." \
-  -v spacebot-data:/data \
+  -v james-data:/data \
   -p 19898:19898 \
-  ghcr.io/spacedriveapp/spacebot:slim
+  ghcr.io/spacedriveapp/james:slim
 ```
 
 Available environment variables:
@@ -78,8 +78,8 @@ Available environment variables:
 | `SLACK_BOT_TOKEN`        | Slack bot token        |
 | `SLACK_APP_TOKEN`        | Slack app token        |
 | `BRAVE_SEARCH_API_KEY`   | Brave Search API key   |
-| `SPACEBOT_CHANNEL_MODEL` | Override channel model |
-| `SPACEBOT_WORKER_MODEL`  | Override worker model  |
+| `JAMES_CHANNEL_MODEL` | Override channel model |
+| `JAMES_WORKER_MODEL`  | Override worker model  |
 
 ### Config File
 
@@ -87,11 +87,11 @@ Mount a config file into the volume for full control:
 
 ```bash
 docker run -d \
-  --name spacebot \
-  -v spacebot-data:/data \
+  --name james \
+  -v james-data:/data \
   -v ./config.toml:/data/config.toml:ro \
   -p 19898:19898 \
-  ghcr.io/spacedriveapp/spacebot:slim
+  ghcr.io/spacedriveapp/james:slim
 ```
 
 Config values can reference environment variables with `env:VAR_NAME`:
@@ -107,35 +107,35 @@ See [config.md](config.md) for the full config reference.
 
 ```yaml
 services:
-  spacebot:
-    image: ghcr.io/spacedriveapp/spacebot:slim
-    container_name: spacebot
+  james:
+    image: ghcr.io/spacedriveapp/james:slim
+    container_name: james
     restart: unless-stopped
     ports:
       - "19898:19898"
     volumes:
-      - spacebot-data:/data
+      - james-data:/data
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       # Optional:
       # - DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
 
 volumes:
-  spacebot-data:
+  james-data:
 ```
 
 ### With Browser Workers
 
 ```yaml
 services:
-  spacebot:
-    image: ghcr.io/spacedriveapp/spacebot:full
-    container_name: spacebot
+  james:
+    image: ghcr.io/spacedriveapp/james:full
+    container_name: james
     restart: unless-stopped
     ports:
       - "19898:19898"
     volumes:
-      - spacebot-data:/data
+      - james-data:/data
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     # Chromium needs these for headless operation
@@ -144,21 +144,21 @@ services:
     shm_size: 1gb
 
 volumes:
-  spacebot-data:
+  james-data:
 ```
 
 The `shm_size` and `seccomp` settings are needed for Chromium to run properly in a container.
 
 ## Building the Image
 
-From the spacebot repo root:
+From the james repo root:
 
 ```bash
 # Slim (no browser)
-docker build --target slim -t spacebot:slim .
+docker build --target slim -t james:slim .
 
 # Full (with Chromium)
-docker build --target full -t spacebot:full .
+docker build --target full -t james:full .
 ```
 
 The multi-stage Dockerfile:
@@ -192,14 +192,14 @@ healthcheck:
 
 ## Container Behavior
 
-- Spacebot runs in **foreground mode** (`--foreground`) inside the container. No daemonization.
+- James runs in **foreground mode** (`--foreground`) inside the container. No daemonization.
 - Logs go to stdout/stderr. Use `docker logs` to view them.
 - Graceful shutdown on `SIGTERM` (what `docker stop` sends). Drains active channels, closes database connections.
 - The PID file and Unix socket (used in daemon mode) are not created.
 
 ## Updates
 
-Spacebot checks for new releases on startup and every hour. When a new version is available, a banner appears in the web UI.
+James checks for new releases on startup and every hour. When a new version is available, a banner appears in the web UI.
 
 The web dashboard also includes **Settings → Updates** with status details, one-click controls (Docker), and manual command snippets.
 
@@ -208,23 +208,23 @@ The web dashboard also includes **Settings → Updates** with status details, on
 ### Manual Update
 
 ```bash
-docker compose pull spacebot
-docker compose up -d --force-recreate spacebot
+docker compose pull james
+docker compose up -d --force-recreate james
 ```
 
 ### One-Click Update
 
-Mount `/var/run/docker.sock` into the Spacebot container to enable the **Update now** button in the UI. Without the socket mount, update checks still work but apply is manual.
+Mount `/var/run/docker.sock` into the James container to enable the **Update now** button in the UI. Without the socket mount, update checks still work but apply is manual.
 
-One-click updates are intended for containers running Spacebot release tags. If you're running a custom/self-built image, rebuild your image and recreate the container.
+One-click updates are intended for containers running James release tags. If you're running a custom/self-built image, rebuild your image and recreate the container.
 
 ### Native / Source Builds
 
-If Spacebot is installed from source (`cargo install --path .` or a local release build), updates are manual: pull latest source, rebuild/reinstall, then restart.
+If James is installed from source (`cargo install --path .` or a local release build), updates are manual: pull latest source, rebuild/reinstall, then restart.
 
 ## CI / Releases
 
-Images are built and pushed to `ghcr.io/spacedriveapp/spacebot` via GitHub Actions (`.github/workflows/release.yml`).
+Images are built and pushed to `ghcr.io/spacedriveapp/james` via GitHub Actions (`.github/workflows/release.yml`).
 
 **Triggers:**
 

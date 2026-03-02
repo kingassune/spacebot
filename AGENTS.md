@@ -1,8 +1,8 @@
 # AGENTS.md
 
-Implementation guide for coding agents working on Spacebot. Read `RUST_STYLE_GUIDE.md` before writing any code.
+Implementation guide for coding agents working on James. Read `RUST_STYLE_GUIDE.md` before writing any code.
 
-## What Spacebot Is
+## What James Is
 
 A Rust agentic system where every LLM process has a dedicated role and delegation is the only way work gets done. It replaces the monolithic session model (one LLM thread doing conversation + thinking + tool execution + memory retrieval + compaction) with specialized processes that only do one thing.
 
@@ -12,7 +12,7 @@ Single binary. No server dependencies. Runs on tokio. All data lives in embedded
 
 ## JavaScript Tooling (Critical)
 
-- For UI work in `spacebot/interface/`, use `bun` for all JS/TS package management and scripts.
+- For UI work in `james/interface/`, use `bun` for all JS/TS package management and scripts.
 - **NEVER** use `npm`, `pnpm`, or `yarn` in this repo unless the user explicitly asks for one.
 - Standard commands:
   - `bun install`
@@ -45,7 +45,7 @@ Additional rules:
 
 ## Architecture Overview
 
-Five process types. Every LLM process is a Rig `Agent<SpacebotModel, SpacebotHook>`. They differ in system prompt, tools, history, and hooks.
+Five process types. Every LLM process is a Rig `Agent<JamesModel, JamesHook>`. They differ in system prompt, tools, history, and hooks.
 
 ### Channels
 
@@ -120,8 +120,8 @@ Database-stored scheduled tasks. Each cron job has a prompt, interval, delivery 
 ## Key Types
 
 ```
-SpacebotModel          — custom CompletionModel impl, routes through LlmManager
-SpacebotHook           — PromptHook impl for channels/branches/workers (status, usage, cancellation)
+JamesModel          — custom CompletionModel impl, routes through LlmManager
+JamesHook           — PromptHook impl for channels/branches/workers (status, usage, cancellation)
 CortexHook             — PromptHook impl for cortex (system observation)
 ProcessType            — enum: Channel, Branch, Worker
 ProcessEvent           — tagged enum for inter-process events
@@ -147,7 +147,7 @@ src/
 │
 ├── llm.rs              → llm/
 │   ├── manager.rs      — LlmManager: provider routing, model resolution, fallback chains
-│   ├── model.rs        — SpacebotModel: CompletionModel impl
+│   ├── model.rs        — JamesModel: CompletionModel impl
 │   ├── routing.rs      — RoutingConfig: process-type defaults, task-type overrides, fallbacks
 │   └── providers.rs    — provider client init (Anthropic, OpenAI, etc.)
 │
@@ -160,7 +160,7 @@ src/
 │   └── status.rs       — StatusBlock: live status snapshot
 │
 ├── hooks.rs            → hooks/
-│   ├── spacebot.rs     — SpacebotHook: channels/branches/workers
+│   ├── james.rs     — JamesHook: channels/branches/workers
 │   └── cortex.rs       — CortexHook: cortex observation
 │
 ├── tools.rs            → tools/
@@ -260,7 +260,7 @@ Every LLM process is a Rig `Agent`. Key patterns:
 ```rust
 let agent = AgentBuilder::new(model.clone())
     .preamble(&system_prompt)
-    .hook(SpacebotHook::new(process_id, process_type, event_tx.clone()))
+    .hook(JamesHook::new(process_id, process_type, event_tx.clone()))
     .tool_server_handle(tools.clone())
     .default_max_turns(50)
     .build();
@@ -279,9 +279,9 @@ let response = agent.prompt(&user_message)
 let branch_history = channel_history.clone();
 ```
 
-**Custom CompletionModel** — `SpacebotModel` routes through `LlmManager`. We don't use Rig's built-in provider clients.
+**Custom CompletionModel** — `JamesModel` routes through `LlmManager`. We don't use Rig's built-in provider clients.
 
-**PromptHook** — `SpacebotHook` sends `ProcessEvent`s for status reporting, usage tracking, cancellation. Returns `Continue`, `Terminate`, or `Skip`.
+**PromptHook** — `JamesHook` sends `ProcessEvent`s for status reporting, usage tracking, cancellation. Returns `Continue`, `Terminate`, or `Skip`.
 
 **ToolServer topology:**
 - Per-channel `ToolServer` (no memory tools, just channel action tools added per turn)
@@ -304,7 +304,7 @@ Phase 1 — Foundation:
 1. `error.rs` — top-level Error enum
 2. `config.rs` — configuration loading
 3. `db/` — SQLite + LanceDB + redb connection setup, migrations
-4. `llm/` — SpacebotModel, LlmManager, provider init
+4. `llm/` — JamesModel, LlmManager, provider init
 5. `main.rs` — startup, config loading, database init
 
 Phase 2 — Memory:
@@ -316,7 +316,7 @@ Phase 2 — Memory:
 6. `memory/maintenance.rs` — decay, prune, merge, reindex
 
 Phase 3 — Agent Core:
-1. `hooks/spacebot.rs` — SpacebotHook (ProcessEvent sending)
+1. `hooks/james.rs` — JamesHook (ProcessEvent sending)
 2. `agent/status.rs` — StatusBlock
 3. `tools/` — implement tools (start with memory_save, memory_recall, set_status)
 4. `agent/worker.rs` — Worker lifecycle (fire-and-forget first, interactive later)
@@ -342,7 +342,7 @@ Phase 5 — Messaging:
 Phase 6 — Hardening:
 1. `secrets/` — encrypted credential storage
 2. `settings/` — key-value settings
-3. Leak detection (scan tool output via SpacebotHook)
+3. Leak detection (scan tool output via JamesHook)
 4. Workspace path guards (reject writes to identity/memory paths)
 5. Circuit breaker for cron jobs and background tasks
 
@@ -374,7 +374,7 @@ Phase 6 — Hardening:
 
 These are validated patterns from research (see `docs/research/pattern-analysis.md`). Implement them when building the relevant module.
 
-**Tool nudging:** When an LLM responds with text instead of tool calls in the first 2 iterations, inject "Please proceed and use the available tools." Implement in `SpacebotHook.on_completion_response()`. Workers benefit most.
+**Tool nudging:** When an LLM responds with text instead of tool calls in the first 2 iterations, inject "Please proceed and use the available tools." Implement in `JamesHook.on_completion_response()`. Workers benefit most.
 
 **Fire-and-forget DB writes:** `tokio::spawn` for conversation history saves, memory writes, worker log persistence. User gets their response immediately.
 
@@ -382,7 +382,7 @@ These are validated patterns from research (see `docs/research/pattern-analysis.
 
 **Hybrid search with RRF:** Vector similarity + full-text search, merged via Reciprocal Rank Fusion (`score = sum(1/(60 + rank))`). RRF works on ranks, not raw scores.
 
-**Leak detection:** Regex patterns for API keys, tokens, PEM keys. Scan in `SpacebotHook.on_tool_result()` (after execution) and before outbound HTTP (block exfiltration).
+**Leak detection:** Regex patterns for API keys, tokens, PEM keys. Scan in `JamesHook.on_tool_result()` (after execution) and before outbound HTTP (block exfiltration).
 
 **Workspace path guard:** File tools reject writes to identity/memory paths with an error directing the LLM to the correct tool.
 
@@ -399,7 +399,7 @@ These are validated patterns from research (see `docs/research/pattern-analysis.
 - `README.md` — full architecture design
 - `RUST_STYLE_GUIDE.md` — coding conventions (read this first)
 - `docs/memory.md` — memory system design
-- `docs/research/rig-integration.md` — how Spacebot maps onto Rig
+- `docs/research/rig-integration.md` — how James maps onto Rig
 - `docs/research/repo-structure.md` — module layout rationale
 - `docs/research/pattern-analysis.md` — patterns to adopt/adapt/skip
 - `docs/messaging.md` — messaging system design (Discord, Telegram, webhook)

@@ -1,4 +1,4 @@
-//! SpacebotModel: Custom CompletionModel implementation that routes through LlmManager.
+//! JamesModel: Custom CompletionModel implementation that routes through LlmManager.
 
 use crate::config::{ApiType, ProviderConfig};
 use crate::llm::manager::LlmManager;
@@ -40,7 +40,7 @@ impl GetTokenUsage for RawStreamingResponse {
 /// Optionally holds a RoutingConfig for fallback behavior. When present,
 /// completion() will try fallback models on retriable errors.
 #[derive(Clone)]
-pub struct SpacebotModel {
+pub struct JamesModel {
     llm_manager: Arc<LlmManager>,
     model_name: String,
     provider: String,
@@ -50,7 +50,7 @@ pub struct SpacebotModel {
     process_type: Option<String>,
 }
 
-impl SpacebotModel {
+impl JamesModel {
     pub fn provider(&self) -> &str {
         &self.provider
     }
@@ -148,8 +148,8 @@ impl SpacebotModel {
                     &endpoint,
                     Some(provider_config.api_key.clone()),
                     &[
-                        ("HTTP-Referer", "https://github.com/spacedriveapp/spacebot"),
-                        ("X-Title", "spacebot"),
+                        ("HTTP-Referer", "https://github.com/spacedriveapp/james"),
+                        ("X-Title", "james"),
                     ],
                 )
                 .await
@@ -176,7 +176,7 @@ impl SpacebotModel {
         let model = if model_name == self.full_model_name {
             self.clone()
         } else {
-            SpacebotModel::make(&self.llm_manager, model_name)
+            JamesModel::make(&self.llm_manager, model_name)
         };
 
         let mut last_error = None;
@@ -222,7 +222,7 @@ impl SpacebotModel {
     }
 }
 
-impl CompletionModel for SpacebotModel {
+impl CompletionModel for JamesModel {
     type Response = RawResponse;
     type StreamingResponse = RawStreamingResponse;
     type Client = Arc<LlmManager>;
@@ -450,7 +450,7 @@ impl CompletionModel for SpacebotModel {
     }
 }
 
-impl SpacebotModel {
+impl JamesModel {
     async fn call_anthropic(
         &self,
         request: CompletionRequest,
@@ -651,7 +651,7 @@ impl SpacebotModel {
             body["instructions"] = serde_json::json!(preamble);
         } else if is_chatgpt_codex {
             body["instructions"] = serde_json::json!(
-                "You are Spacebot. Follow instructions exactly and respond concisely."
+                "You are James. Follow instructions exactly and respond concisely."
             );
         }
 
@@ -704,12 +704,9 @@ impl SpacebotModel {
                 .header("originator", "opencode")
                 .header(
                     "session_id",
-                    format!("spacebot-{}", chrono::Utc::now().timestamp()),
+                    format!("james-{}", chrono::Utc::now().timestamp()),
                 )
-                .header(
-                    "user-agent",
-                    format!("spacebot/{}", env!("CARGO_PKG_VERSION")),
-                );
+                .header("user-agent", format!("james/{}", env!("CARGO_PKG_VERSION")));
         }
 
         let response = request_builder

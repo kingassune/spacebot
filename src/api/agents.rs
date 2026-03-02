@@ -12,12 +12,12 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 fn hosted_agent_limit() -> Option<usize> {
-    let deployment = std::env::var("SPACEBOT_DEPLOYMENT").ok()?;
+    let deployment = std::env::var("JAMES_DEPLOYMENT").ok()?;
     if !deployment.eq_ignore_ascii_case("hosted") {
         return None;
     }
 
-    std::env::var("SPACEBOT_MAX_AGENTS")
+    std::env::var("JAMES_MAX_AGENTS")
         .ok()
         .and_then(|value| value.parse::<usize>().ok())
         .filter(|value| *value > 0)

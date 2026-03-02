@@ -2,8 +2,8 @@
 
 use crate::agent::compactor::estimate_history_tokens;
 use crate::error::Result;
-use crate::hooks::SpacebotHook;
-use crate::llm::SpacebotModel;
+use crate::hooks::JamesHook;
+use crate::llm::JamesModel;
 use crate::llm::routing::is_context_overflow_error;
 use crate::{AgentDeps, BranchId, ChannelId, ProcessEvent, ProcessId, ProcessType};
 use rig::agent::AgentBuilder;
@@ -20,7 +20,7 @@ pub struct Branch {
     pub channel_id: ChannelId,
     pub description: String,
     pub deps: AgentDeps,
-    pub hook: SpacebotHook,
+    pub hook: JamesHook,
     /// System prompt loaded from prompts/BRANCH.md.
     pub system_prompt: String,
     /// Clone of the channel's history at fork time (Rig message format).
@@ -44,7 +44,7 @@ impl Branch {
     ) -> Self {
         let id = Uuid::new_v4();
         let process_id = ProcessId::Branch(id);
-        let hook = SpacebotHook::new(
+        let hook = JamesHook::new(
             deps.agent_id.clone(),
             process_id,
             ProcessType::Branch,
@@ -90,7 +90,7 @@ impl Branch {
 
         let routing = self.deps.runtime_config.routing.load();
         let model_name = routing.resolve(ProcessType::Branch, None).to_string();
-        let model = SpacebotModel::make(&self.deps.llm_manager, &model_name)
+        let model = JamesModel::make(&self.deps.llm_manager, &model_name)
             .with_context(&*self.deps.agent_id, "branch")
             .with_routing((**routing).clone());
 

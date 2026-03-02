@@ -3,8 +3,8 @@
 use crate::agent::compactor::estimate_history_tokens;
 use crate::config::BrowserConfig;
 use crate::error::Result;
-use crate::hooks::SpacebotHook;
-use crate::llm::SpacebotModel;
+use crate::hooks::JamesHook;
+use crate::llm::JamesModel;
 use crate::llm::routing::is_context_overflow_error;
 use crate::{AgentDeps, ChannelId, ProcessId, ProcessType, WorkerId};
 use rig::agent::AgentBuilder;
@@ -46,7 +46,7 @@ pub struct Worker {
     pub task: String,
     pub state: WorkerState,
     pub deps: AgentDeps,
-    pub hook: SpacebotHook,
+    pub hook: JamesHook,
     /// System prompt loaded from prompts/WORKER.md.
     pub system_prompt: String,
     /// Input channel for interactive workers.
@@ -79,7 +79,7 @@ impl Worker {
     ) -> Self {
         let id = Uuid::new_v4();
         let process_id = ProcessId::Worker(id);
-        let hook = SpacebotHook::new(
+        let hook = JamesHook::new(
             deps.agent_id.clone(),
             process_id,
             ProcessType::Worker,
@@ -120,7 +120,7 @@ impl Worker {
     ) -> (Self, mpsc::Sender<String>) {
         let id = Uuid::new_v4();
         let process_id = ProcessId::Worker(id);
-        let hook = SpacebotHook::new(
+        let hook = JamesHook::new(
             deps.agent_id.clone(),
             process_id,
             ProcessType::Worker,
@@ -210,7 +210,7 @@ impl Worker {
 
         let routing = self.deps.runtime_config.routing.load();
         let model_name = routing.resolve(ProcessType::Worker, None).to_string();
-        let model = SpacebotModel::make(&self.deps.llm_manager, &model_name)
+        let model = JamesModel::make(&self.deps.llm_manager, &model_name)
             .with_context(&*self.deps.agent_id, "worker")
             .with_routing((**routing).clone());
 

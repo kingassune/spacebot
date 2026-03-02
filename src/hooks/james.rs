@@ -1,4 +1,4 @@
-//! SpacebotHook: Prompt hook for channels, branches, and workers.
+//! JamesHook: Prompt hook for channels, branches, and workers.
 
 use crate::{AgentId, ChannelId, ProcessEvent, ProcessId, ProcessType};
 use rig::agent::{HookAction, PromptHook, ToolCallHookAction};
@@ -7,7 +7,7 @@ use tokio::sync::broadcast;
 
 /// Hook for observing agent behavior and sending events.
 #[derive(Clone)]
-pub struct SpacebotHook {
+pub struct JamesHook {
     agent_id: AgentId,
     process_id: ProcessId,
     process_type: ProcessType,
@@ -15,7 +15,7 @@ pub struct SpacebotHook {
     event_tx: broadcast::Sender<ProcessEvent>,
 }
 
-impl SpacebotHook {
+impl JamesHook {
     /// Create a new hook.
     pub fn new(
         agent_id: AgentId,
@@ -60,7 +60,7 @@ static TOOL_CALL_TIMERS: std::sync::LazyLock<
     std::sync::Mutex<std::collections::HashMap<String, std::time::Instant>>,
 > = std::sync::LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
 
-impl<M> PromptHook<M> for SpacebotHook
+impl<M> PromptHook<M> for JamesHook
 where
     M: CompletionModel,
 {

@@ -440,7 +440,7 @@ async fn fetch_registry_skill_description(
             let url = format!("https://raw.githubusercontent.com/{source}/{branch}/{path}");
             let response = match client
                 .get(&url)
-                .header(reqwest::header::USER_AGENT, "spacebot-registry-client")
+                .header(reqwest::header::USER_AGENT, "james-registry-client")
                 .timeout(Duration::from_secs(3))
                 .send()
                 .await

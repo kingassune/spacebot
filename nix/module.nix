@@ -4,12 +4,12 @@ self: {
   pkgs,
   ...
 }: let
-  cfg = config.services.spacebot;
+  cfg = config.services.james;
   inherit (lib) mkEnableOption mkOption types literalExpression;
 
   selectedPackage =
     if cfg.variant == "full"
-    then self.packages.${pkgs.system}.spacebot-full
+    then self.packages.${pkgs.system}.james-full
     else cfg.package;
 
   profilePathEntries = lib.optionals (cfg.pathUser != null) [
@@ -30,14 +30,14 @@ self: {
     ++ lib.optionals (cfg.variant == "full") ["${pkgs.chromium}/bin"]
     ++ cfg.pathAppend;
 in {
-  options.services.spacebot = {
-    enable = mkEnableOption "Spacebot AI Agent";
+  options.services.james = {
+    enable = mkEnableOption "James AI Agent";
 
     package = mkOption {
       type = types.package;
-      default = self.packages.${pkgs.system}.spacebot;
-      defaultText = literalExpression "self.packages.\${pkgs.system}.spacebot";
-      description = "The Spacebot package to use (for slim variant).";
+      default = self.packages.${pkgs.system}.james;
+      defaultText = literalExpression "self.packages.\${pkgs.system}.james";
+      description = "The James package to use (for slim variant).";
     };
 
     variant = mkOption {
@@ -52,23 +52,23 @@ in {
 
     dataDir = mkOption {
       type = types.path;
-      default = "/var/lib/spacebot";
+      default = "/var/lib/james";
       description = ''
-        Directory where Spacebot stores its data, including config.toml.
+        Directory where James stores its data, including config.toml.
         Manage config.toml directly in this directory.
       '';
     };
 
     user = mkOption {
       type = types.str;
-      default = "spacebot";
-      description = "User account under which Spacebot runs.";
+      default = "james";
+      description = "User account under which James runs.";
     };
 
     group = mkOption {
       type = types.str;
-      default = "spacebot";
-      description = "Group under which Spacebot runs.";
+      default = "james";
+      description = "Group under which James runs.";
     };
 
     pathUser = mkOption {
@@ -77,7 +77,7 @@ in {
       example = "alice";
       description = ''
         User whose Nix profile paths should be added to PATH for worker tools.
-        When set, Spacebot includes:
+        When set, James includes:
           - /home/<user>/.nix-profile/bin
           - /home/<user>/.local/state/nix/profile/bin
           - /etc/profiles/per-user/<user>/bin
@@ -96,14 +96,14 @@ in {
     pathAppend = mkOption {
       type = types.listOf types.str;
       default = [];
-      example = ["/srv/spacebot/bin"];
+      example = ["/srv/james/bin"];
       description = "Directories to append to the service PATH after built-in defaults.";
     };
 
     environmentFile = mkOption {
       type = types.nullOr types.path;
       default = null;
-      example = "/run/secrets/spacebot/env";
+      example = "/run/secrets/james/env";
       description = ''
         Path to an environment file loaded into the service.
         Useful for injecting secrets (API keys, tokens) via sops-nix or agenix
@@ -124,7 +124,7 @@ in {
     port = mkOption {
       type = types.port;
       default = 19898;
-      description = "Port Spacebot listens on. Used for the firewall rule and the initial config.toml seed.";
+      description = "Port James listens on. Used for the firewall rule and the initial config.toml seed.";
     };
 
     bind = mkOption {
@@ -148,25 +148,25 @@ in {
   };
 
   config = lib.mkIf cfg.enable {
-    users.users.${cfg.user} = lib.mkIf (cfg.user == "spacebot") {
+    users.users.${cfg.user} = lib.mkIf (cfg.user == "james") {
       inherit (cfg) group;
       isSystemUser = true;
       home = cfg.dataDir;
-      description = "Spacebot daemon user";
+      description = "James daemon user";
     };
 
-    users.groups.${cfg.group} = lib.mkIf (cfg.group == "spacebot") {};
+    users.groups.${cfg.group} = lib.mkIf (cfg.group == "james") {};
 
-    systemd.services.spacebot = {
-      description = "Spacebot AI Agent";
+    systemd.services.james = {
+      description = "James AI Agent";
       wantedBy = ["multi-user.target"];
       after = ["network.target"];
       wants = ["network-online.target"];
 
       environment =
         {
-          SPACEBOT_DIR = cfg.dataDir;
-          SPACEBOT_DEPLOYMENT = "nixos";
+          JAMES_DIR = cfg.dataDir;
+          JAMES_DEPLOYMENT = "nixos";
           PATH = lib.mkForce (lib.concatStringsSep ":" servicePathEntries);
         }
         // cfg.environment;
@@ -183,7 +183,7 @@ in {
         EOF
           chmod 600 "${cfg.dataDir}/config.toml"
         fi
-        exec ${selectedPackage}/bin/spacebot start --foreground
+        exec ${selectedPackage}/bin/james start --foreground
       '';
 
       serviceConfig =
