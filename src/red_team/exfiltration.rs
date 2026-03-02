@@ -44,10 +44,7 @@ pub struct ExfilResult {
 }
 
 /// Simulates staging a data exfiltration operation in an authorized engagement.
-pub async fn stage_exfiltration(
-    config: &ExfilConfig,
-    _data: &[u8],
-) -> anyhow::Result<ExfilResult> {
+pub async fn stage_exfiltration(config: &ExfilConfig, _data: &[u8]) -> anyhow::Result<ExfilResult> {
     Ok(ExfilResult {
         success: false,
         bytes_transferred: 0,

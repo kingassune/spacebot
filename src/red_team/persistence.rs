@@ -70,27 +70,17 @@ pub fn generate_cleanup_command(mechanism: &PersistenceMechanism) -> String {
             "reg delete HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run /v Implant /f"
                 .to_string()
         }
-        PersistenceMechanism::ScheduledTask => {
-            "schtasks /delete /tn \"Implant\" /f".to_string()
-        }
-        PersistenceMechanism::Service => {
-            "sc stop implant_svc && sc delete implant_svc".to_string()
-        }
+        PersistenceMechanism::ScheduledTask => "schtasks /delete /tn \"Implant\" /f".to_string(),
+        PersistenceMechanism::Service => "sc stop implant_svc && sc delete implant_svc".to_string(),
         PersistenceMechanism::DllHijack => {
             "Remove-Item -Path \"C:\\path\\to\\hijacked.dll\" -Force".to_string()
         }
-        PersistenceMechanism::Bootkit => {
-            "bootrec /fixmbr && bootrec /fixboot".to_string()
-        }
+        PersistenceMechanism::Bootkit => "bootrec /fixmbr && bootrec /fixboot".to_string(),
         PersistenceMechanism::Rootkit => {
             "Reboot into live environment and remove rootkit artifacts manually".to_string()
         }
-        PersistenceMechanism::WebShell => {
-            "rm -f /var/www/html/shell.php".to_string()
-        }
-        PersistenceMechanism::CronJob => {
-            "crontab -l | grep -v implant | crontab -".to_string()
-        }
+        PersistenceMechanism::WebShell => "rm -f /var/www/html/shell.php".to_string(),
+        PersistenceMechanism::CronJob => "crontab -l | grep -v implant | crontab -".to_string(),
         PersistenceMechanism::SshKey => {
             "sed -i '/implant_key/d' ~/.ssh/authorized_keys".to_string()
         }

@@ -152,7 +152,10 @@ pub fn load_apt_profile(group: &AptGroup) -> AptProfile {
                 "MiniDuke".to_string(),
                 "CosmicDuke".to_string(),
             ],
-            objectives: vec!["Intelligence Collection".to_string(), "Espionage".to_string()],
+            objectives: vec![
+                "Intelligence Collection".to_string(),
+                "Espionage".to_string(),
+            ],
         },
         AptGroup::Lazarus => AptProfile {
             name: "Lazarus Group".to_string(),
@@ -277,7 +280,10 @@ pub fn load_apt_profile(group: &AptGroup) -> AptProfile {
         AptGroup::CharmingKitten => AptProfile {
             name: "Charming Kitten (APT35)".to_string(),
             nation_state: "Iran".to_string(),
-            mitre_tactics: vec!["Initial Access".to_string(), "Credential Access".to_string()],
+            mitre_tactics: vec![
+                "Initial Access".to_string(),
+                "Credential Access".to_string(),
+            ],
             ttps: vec![MitreAttackTechnique {
                 id: "T1111".to_string(),
                 name: "Multi-Factor Authentication Interception".to_string(),
@@ -323,7 +329,10 @@ pub async fn emulate_apt(
         techniques_used,
         success_rate,
         detection_events: 0,
-        report_path: format!("/tmp/apt_emulation_{}.md", scope.target_org.replace(' ', "_")),
+        report_path: format!(
+            "/tmp/apt_emulation_{}.md",
+            scope.target_org.replace(' ', "_")
+        ),
     })
 }
 
@@ -331,7 +340,9 @@ pub async fn emulate_apt(
 pub fn generate_apt_report(result: &EmulationResult) -> String {
     let mut report = format!(
         "# APT Emulation Report\n\n**Group:** {:?}\n**Success Rate:** {:.0}%\n**Detection Events:** {}\n\n",
-        result.apt_group, result.success_rate * 100.0, result.detection_events
+        result.apt_group,
+        result.success_rate * 100.0,
+        result.detection_events
     );
 
     report.push_str("## Techniques Used\n\n");

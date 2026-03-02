@@ -25,7 +25,7 @@ pub struct BlueTeamEngine {
 }
 
 impl BlueTeamEngine {
-    /// Create a new engine with the given organisation name and output directory.
+    /// Create a new engine with the given organization name and output directory.
     pub fn new(org_name: &str, output_dir: &str) -> Self {
         Self {
             org_name: org_name.to_string(),

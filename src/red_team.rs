@@ -80,10 +80,7 @@ impl RedTeamEngine {
     }
 
     /// Lists active C2 sessions.
-    pub async fn list_c2_sessions(
-        &self,
-        config: &C2Config,
-    ) -> anyhow::Result<Vec<C2Session>> {
+    pub async fn list_c2_sessions(&self, config: &C2Config) -> anyhow::Result<Vec<C2Session>> {
         c2::list_sessions(config).await
     }
 

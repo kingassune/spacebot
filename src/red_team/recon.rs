@@ -171,10 +171,7 @@ pub fn generate_recon_report(results: &ReconResult) -> String {
         ));
     }
 
-    report.push_str(&format!(
-        "\n## Subdomains ({})\n",
-        results.subdomains.len()
-    ));
+    report.push_str(&format!("\n## Subdomains ({})\n", results.subdomains.len()));
     for subdomain in &results.subdomains {
         report.push_str(&format!("- {subdomain}\n"));
     }
