@@ -11,7 +11,9 @@ use tokio::sync::mpsc;
 
 #[derive(Parser)]
 #[command(name = "james", version)]
-#[command(about = "A Rust agentic system with dedicated processes for every task")]
+#[command(
+    about = "James — AI-powered security research and assessment platform with dedicated processes for every task"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -52,6 +54,78 @@ enum Command {
     /// Manage secrets stored in the running instance
     #[command(subcommand)]
     Secrets(SecretsCommand),
+    /// Security assessment and research tooling
+    #[command(subcommand)]
+    Security(SecurityCommand),
+}
+
+#[derive(Subcommand)]
+enum SecurityCommand {
+    /// Red team adversary emulation (authorized engagements only)
+    #[command(subcommand)]
+    RedTeam(RedTeamCommand),
+    /// Blue team defensive operations
+    #[command(subcommand)]
+    BlueTeam(BlueTeamCommand),
+    /// Penetration testing orchestration
+    #[command(subcommand)]
+    Pentest(PentestCommand),
+    /// Blockchain and smart contract security analysis
+    #[command(subcommand)]
+    Blockchain(BlockchainCommand),
+}
+
+#[derive(Subcommand)]
+enum RedTeamCommand {
+    /// Plan a recon phase for an authorized engagement
+    Recon {
+        /// Engagement scope description
+        scope: String,
+    },
+    /// List available APT emulation profiles
+    AptProfiles,
+}
+
+#[derive(Subcommand)]
+enum BlueTeamCommand {
+    /// Generate detection rules for a given threat
+    Detect {
+        /// Threat or technique description
+        threat: String,
+    },
+    /// Start threat hunting workflow
+    Hunt {
+        /// Hypothesis to investigate
+        hypothesis: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum PentestCommand {
+    /// Define engagement scope
+    Scope {
+        /// Target system or application
+        target: String,
+    },
+    /// Generate a pentest report template
+    Report {
+        /// Engagement name
+        name: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum BlockchainCommand {
+    /// Analyze a smart contract for vulnerabilities
+    Audit {
+        /// Contract file path or address
+        target: String,
+    },
+    /// Analyze a DeFi protocol
+    Defi {
+        /// Protocol name or address
+        protocol: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -206,6 +280,7 @@ fn main() -> anyhow::Result<()> {
         Command::Skill(skill_cmd) => cmd_skill(cli.config, skill_cmd),
         Command::Auth(auth_cmd) => cmd_auth(cli.config, auth_cmd),
         Command::Secrets(secrets_cmd) => cmd_secrets(cli.config, secrets_cmd),
+        Command::Security(security_cmd) => cmd_security(security_cmd),
     }
 }
 
@@ -2769,6 +2844,58 @@ async fn initialize_agents(
         tracing::info!("cortex chat sessions initialized");
     }
 
+    Ok(())
+}
+
+fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
+    match security_cmd {
+        SecurityCommand::RedTeam(red_team_cmd) => match red_team_cmd {
+            RedTeamCommand::Recon { scope } => {
+                println!("Red team recon scope: {scope}");
+                println!(
+                    "Use 'james start' and ask James to perform authorized recon for: {scope}"
+                );
+            }
+            RedTeamCommand::AptProfiles => {
+                println!("Available APT emulation profiles:");
+                println!(
+                    "  Use 'james security red-team' commands via the James agent for full profiles."
+                );
+            }
+        },
+        SecurityCommand::BlueTeam(blue_team_cmd) => match blue_team_cmd {
+            BlueTeamCommand::Detect { threat } => {
+                println!("Detection rule generation for: {threat}");
+                println!(
+                    "Use 'james start' and ask James to generate detection rules for: {threat}"
+                );
+            }
+            BlueTeamCommand::Hunt { hypothesis } => {
+                println!("Threat hunting hypothesis: {hypothesis}");
+                println!("Use 'james start' and ask James to run a threat hunt for: {hypothesis}");
+            }
+        },
+        SecurityCommand::Pentest(pentest_cmd) => match pentest_cmd {
+            PentestCommand::Scope { target } => {
+                println!("Pentest scope defined for: {target}");
+                println!("Use 'james start' and ask James to plan a pentest for: {target}");
+            }
+            PentestCommand::Report { name } => {
+                println!("Generating pentest report template for engagement: {name}");
+                println!("Use 'james start' and ask James to generate a report for: {name}");
+            }
+        },
+        SecurityCommand::Blockchain(blockchain_cmd) => match blockchain_cmd {
+            BlockchainCommand::Audit { target } => {
+                println!("Smart contract audit target: {target}");
+                println!("Use 'james start' and ask James to audit: {target}");
+            }
+            BlockchainCommand::Defi { protocol } => {
+                println!("DeFi protocol analysis: {protocol}");
+                println!("Use 'james start' and ask James to analyze DeFi protocol: {protocol}");
+            }
+        },
+    }
     Ok(())
 }
 

@@ -5,7 +5,7 @@
 <h1 align="center">James</h1>
 
 <p align="center">
-  <strong>An AI agent for teams, communities, and multi-user environments.</strong><br/>
+  <strong>An AI agent for teams, communities, and authorized security research.</strong><br/>
   Thinks, executes, and responds — concurrently, not sequentially.<br/>
   Never blocks. Never forgets.
 </p>
@@ -557,6 +557,73 @@ Formatting is still enforced in CI, but the hook catches it earlier by running `
 
 ---
 
-## License
+## Security Research Platform
+
+James extends its agentic architecture to professional security research and assessment workflows. The same concurrent, non-blocking process model that handles team communications is applied to security analysis — running recon, static analysis, and report generation in parallel without blocking the conversation.
+
+### Trail of Bits Security Skills
+
+James ships with 23 security skills built on Trail of Bits' published methodologies and tooling. Install any skill and James gains structured workflows for that domain.
+
+| Skill | Description |
+|---|---|
+| `building-secure-contracts` | Solidity/Vyper smart contract audit methodology |
+| `entry-point-analyzer` | Attack surface mapping and call graph analysis |
+| `agentic-actions-auditor` | AI agent tool definition and trust boundary review |
+| `audit-context-building` | Threat modeling and audit context documentation |
+| `burpsuite-project-parser` | Burp Suite project file analysis and reporting |
+| `differential-review` | Security regression detection in code diffs |
+| `insecure-defaults` | Dangerous default configuration detection |
+| `semgrep-rule-creator` | Custom Semgrep rule authoring |
+| `semgrep-rule-variant-creator` | Semgrep variant rule generation |
+| `sharp-edges` | Language-specific footgun and unsafe API detection |
+| `static-analysis` | Multi-tool static analysis orchestration (CodeQL, Semgrep, cargo audit) |
+| `supply-chain-risk-auditor` | Dependency and supply chain security review |
+| `testing-handbook-skills` | Trail of Bits Testing Handbook structured test workflows |
+| `variant-analysis` | Root-cause to variant discovery methodology |
+| `yara-authoring` | YARA rule creation for malware and pattern detection |
+| `constant-time-analysis` | Timing side-channel review for cryptographic code |
+| `property-based-testing` | Security property and invariant test design |
+| `spec-to-code-compliance` | Protocol specification vs. implementation gap analysis |
+| `zeroize-audit` | Rust secret zeroing and sensitive data lifecycle review |
+| `dwarf-expert` | DWARF debug information extraction and binary analysis |
+| `firebase-apk-scanner` | Android APK and Firebase configuration security review |
+| `skill-improver` | Iterative skill refinement based on usage feedback |
+| `workflow-skill-design` | Design and authoring of new security workflow skills |
+
+### Security Modules
+
+James includes dedicated security module stubs for extension:
+
+- **Red Team** (`red_team`) — Authorized adversary emulation: recon, exploitation research, lateral movement modeling, persistence analysis, APT profile emulation
+- **Blue Team** (`blue_team`) — Defensive operations: detection rule generation, incident response workflows, threat hunting, hardening profiles, forensics
+- **Exploit Engine** (`exploit_engine`) — Security research: vulnerability database, PoC templates, fuzzing targets, crash analysis, patch diffing
+- **Pentest** (`pentest`) — Penetration testing orchestration: scoping, web/network/mobile assessment workflows, report generation
+- **Blockchain Security** (`blockchain_security`) — Smart contract and DeFi security: contract auditing, consensus analysis, wallet review, bridge security, ZK proof analysis
+- **Meta Agent** (`meta_agent`) — Multi-agent workflow orchestration: skill routing, workflow definition, evaluation criteria
+
+> **All security capabilities are for authorized use only.** James does not facilitate unauthorized access to systems. Use only against systems you own or have explicit written permission to test.
+
+### Security CLI
+
+```bash
+# Red team adversary emulation (authorized engagements)
+james security red-team recon "example.com in-scope systems"
+james security red-team apt-profiles
+
+# Blue team defensive operations
+james security blue-team detect "credential dumping via LSASS"
+james security blue-team hunt "lateral movement via WMI"
+
+# Penetration testing
+james security pentest scope "web application at app.example.com"
+james security pentest report "Q4 2025 Web Assessment"
+
+# Blockchain security
+james security blockchain audit "contracts/Token.sol"
+james security blockchain defi "UniswapV3 fork"
+```
+
+---
 
 FSL-1.1-ALv2 — [Functional Source License](https://fsl.software/), converting to Apache 2.0 after two years. See [LICENSE](LICENSE) for details.

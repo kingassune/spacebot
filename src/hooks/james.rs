@@ -1,4 +1,4 @@
-//! JamesHook: Prompt hook for channels, branches, and workers.
+//! JamesHook: Prompt hook for channels, branches, workers, compactor, and cortex processes.
 
 use crate::{AgentId, ChannelId, ProcessEvent, ProcessId, ProcessType};
 use rig::agent::{HookAction, PromptHook, ToolCallHookAction};
