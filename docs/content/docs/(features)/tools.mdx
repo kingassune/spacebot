@@ -5,7 +5,7 @@ description: Tools that give LLM processes the ability to act.
 
 # Tools
 
-How Spacebot gives LLM processes the ability to act.
+How James gives LLM processes the ability to act.
 
 ## Overview
 
@@ -37,7 +37,7 @@ Core tools include:
 
 Rig's `ToolServer` runs as a tokio task. You register tools on it, call `.run()` to get a `ToolServerHandle`, and pass that handle to agents. The handle is `Clone` — all clones point to the same server task.
 
-Spacebot uses four ToolServer configurations:
+James uses four ToolServer configurations:
 
 ### Channel ToolServer (per-channel)
 
@@ -181,7 +181,7 @@ Worker subprocesses also start with a clean environment -- they never inherit th
 
 The `file` tool independently validates paths against the workspace boundary and rejects writes to identity files (`SOUL.md`, `IDENTITY.md`, `USER.md`). The `exec` tool blocks dangerous environment variables (`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, etc.) that enable library injection regardless of sandbox state.
 
-Leak detection (via `SpacebotHook`) scans all tool output for secret patterns (API keys, tokens, PEM keys) and terminates the process if a leak is found. This includes base64-encoded, URL-encoded, and hex-encoded variants.
+Leak detection (via `JamesHook`) scans all tool output for secret patterns (API keys, tokens, PEM keys) and terminates the process if a leak is found. This includes base64-encoded, URL-encoded, and hex-encoded variants.
 
 ### Status reporting
 

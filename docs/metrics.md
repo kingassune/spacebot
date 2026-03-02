@@ -36,16 +36,16 @@ The metrics server runs as a separate tokio task alongside the main API server. 
 
 ## Exposed Metrics
 
-All metrics are prefixed with `spacebot_`.
+All metrics are prefixed with `james_`.
 
 ### LLM Metrics
 
 | Metric                                  | Type      | Labels                              | Description                        |
 | --------------------------------------- | --------- | ----------------------------------- | ---------------------------------- |
-| `spacebot_llm_requests_total`           | Counter   | agent_id, model, tier               | Total LLM completion requests      |
-| `spacebot_llm_request_duration_seconds` | Histogram | agent_id, model, tier               | LLM request duration               |
-| `spacebot_llm_tokens_total`             | Counter   | agent_id, model, tier, direction    | Token counts (input/output/cached)  |
-| `spacebot_llm_estimated_cost_dollars`   | Counter   | agent_id, model, tier               | Estimated cost in USD              |
+| `james_llm_requests_total`           | Counter   | agent_id, model, tier               | Total LLM completion requests      |
+| `james_llm_request_duration_seconds` | Histogram | agent_id, model, tier               | LLM request duration               |
+| `james_llm_tokens_total`             | Counter   | agent_id, model, tier, direction    | Token counts (input/output/cached)  |
+| `james_llm_estimated_cost_dollars`   | Counter   | agent_id, model, tier               | Estimated cost in USD              |
 
 The `tier` label corresponds to the process type making the request: `channel`, `branch`, `worker`, `compactor`, or `cortex`.
 
@@ -53,55 +53,55 @@ The `tier` label corresponds to the process type making the request: `channel`, 
 
 | Metric                                    | Type      | Labels                | Description                         |
 | ----------------------------------------- | --------- | --------------------- | ----------------------------------- |
-| `spacebot_tool_calls_total`               | Counter   | agent_id, tool_name   | Total tool calls executed           |
-| `spacebot_tool_call_duration_seconds`     | Histogram |                       | Tool call execution duration        |
+| `james_tool_calls_total`               | Counter   | agent_id, tool_name   | Total tool calls executed           |
+| `james_tool_call_duration_seconds`     | Histogram |                       | Tool call execution duration        |
 
 ### Agent & Worker Metrics
 
 | Metric                                  | Type      | Labels                              | Description                        |
 | --------------------------------------- | --------- | ----------------------------------- | ---------------------------------- |
-| `spacebot_active_workers`               | Gauge     | agent_id                            | Currently active workers           |
-| `spacebot_active_branches`              | Gauge     | agent_id                            | Currently active branches          |
-| `spacebot_worker_duration_seconds`      | Histogram | agent_id, worker_type               | Worker lifetime duration           |
-| `spacebot_process_errors_total`         | Counter   | agent_id, process_type, error_type  | Process errors by type             |
+| `james_active_workers`               | Gauge     | agent_id                            | Currently active workers           |
+| `james_active_branches`              | Gauge     | agent_id                            | Currently active branches          |
+| `james_worker_duration_seconds`      | Histogram | agent_id, worker_type               | Worker lifetime duration           |
+| `james_process_errors_total`         | Counter   | agent_id, process_type, error_type  | Process errors by type             |
 
 ### Memory Metrics
 
 | Metric                                  | Type      | Labels                | Description                        |
 | --------------------------------------- | --------- | --------------------- | ---------------------------------- |
-| `spacebot_memory_reads_total`           | Counter   |                       | Total memory recall operations     |
-| `spacebot_memory_writes_total`          | Counter   |                       | Total memory save operations       |
-| `spacebot_memory_entry_count`           | Gauge     | agent_id              | Memory entries per agent           |
-| `spacebot_memory_updates_total`         | Counter   | agent_id, operation   | Memory mutations (save/delete/forget) |
+| `james_memory_reads_total`           | Counter   |                       | Total memory recall operations     |
+| `james_memory_writes_total`          | Counter   |                       | Total memory save operations       |
+| `james_memory_entry_count`           | Gauge     | agent_id              | Memory entries per agent           |
+| `james_memory_updates_total`         | Counter   | agent_id, operation   | Memory mutations (save/delete/forget) |
 
 ## Useful PromQL Queries
 
 **Total estimated spend by agent:**
 ```promql
-sum(spacebot_llm_estimated_cost_dollars) by (agent_id)
+sum(james_llm_estimated_cost_dollars) by (agent_id)
 ```
 
 **Hourly spend rate by model:**
 ```promql
-sum(rate(spacebot_llm_estimated_cost_dollars[1h])) by (agent_id, model) * 3600
+sum(rate(james_llm_estimated_cost_dollars[1h])) by (agent_id, model) * 3600
 ```
 
 **Token throughput:**
 ```promql
-sum(rate(spacebot_llm_tokens_total[5m])) by (direction)
+sum(rate(james_llm_tokens_total[5m])) by (direction)
 ```
 
 **Active branches and workers:**
 ```promql
-spacebot_active_branches
-spacebot_active_workers
+james_active_branches
+james_active_workers
 ```
 
 ## Prometheus Scrape Config
 
 ```yaml
 scrape_configs:
-  - job_name: spacebot
+  - job_name: james
     scrape_interval: 15s
     static_configs:
       - targets: ["localhost:9090"]
@@ -113,12 +113,12 @@ Expose the metrics port alongside the API port:
 
 ```bash
 docker run -d \
-  --name spacebot \
+  --name james \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
-  -v spacebot-data:/data \
+  -v james-data:/data \
   -p 19898:19898 \
   -p 9090:9090 \
-  ghcr.io/spacedriveapp/spacebot:slim
+  ghcr.io/spacedriveapp/james:slim
 ```
 
 The Docker image must be built with `--features metrics` for this to work. The default images do not include metrics support.

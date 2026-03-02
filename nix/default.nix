@@ -62,7 +62,7 @@
   ] ++ lib.optionals stdenv.isLinux [pkgs.mold];
 
   frontendNodeModules = stdenv.mkDerivation {
-    pname = "spacebot-frontend-node-modules";
+    pname = "james-frontend-node-modules";
     inherit version;
     src = "${frontendSrc}/interface";
 
@@ -116,7 +116,7 @@
   };
 
   frontend = stdenv.mkDerivation {
-    pname = "spacebot-frontend";
+    pname = "james-frontend";
     inherit version;
     src = "${frontendSrc}/interface";
 
@@ -173,7 +173,7 @@
     '';
 
   commonBuildEnv = ''
-    export SPACEBOT_SKIP_FRONTEND_BUILD=1
+    export JAMES_SKIP_FRONTEND_BUILD=1
     mkdir -p interface/dist
     cp -r ${frontend}/* interface/dist/
   '';
@@ -184,9 +184,9 @@
     fn main() {}
   '';
 
-  spacebotCargoArtifacts = craneLib.buildDepsOnly (commonArgs
+  jamesCargoArtifacts = craneLib.buildDepsOnly (commonArgs
     // {
-      cargoExtraArgs = "--bin spacebot";
+      cargoExtraArgs = "--bin james";
       doCheck = false;
       cargoCheckCommand = "true";
       src = craneLib.mkDummySrc {
@@ -200,7 +200,7 @@
       preBuild = commonRustBuildEnvWithLinker;
     });
 
-  spacebotTestsCargoArtifacts = craneLib.buildDepsOnly (commonArgs
+  jamesTestsCargoArtifacts = craneLib.buildDepsOnly (commonArgs
     // {
       doCheck = false;
       cargoCheckCommand = "true";
@@ -215,24 +215,24 @@
       preBuild = commonRustBuildEnvWithLinker;
     });
 
-  spacebot = craneLib.buildPackage (commonArgs
+  james = craneLib.buildPackage (commonArgs
     // {
-      cargoArtifacts = spacebotCargoArtifacts;
+      cargoArtifacts = jamesCargoArtifacts;
       doCheck = false;
-      cargoExtraArgs = "--bin spacebot";
+      cargoExtraArgs = "--bin james";
 
       preBuild = commonBuildEnvWithLinker;
 
       postInstall = ''
-        mkdir -p $out/share/spacebot
-        cp -r ${runtimeAssetsSrc}/prompts $out/share/spacebot/
-        cp -r ${runtimeAssetsSrc}/migrations $out/share/spacebot/
-        chmod -R u+w $out/share/spacebot
+        mkdir -p $out/share/james
+        cp -r ${runtimeAssetsSrc}/prompts $out/share/james/
+        cp -r ${runtimeAssetsSrc}/migrations $out/share/james/
+        chmod -R u+w $out/share/james
       '';
 
       meta = with lib; {
         description = "An AI agent for teams, communities, and multi-user environments";
-        homepage = "https://spacebot.sh";
+        homepage = "https://james.sh";
         license = {
           shortName = "FSL-1.1-ALv2";
           fullName = "Functional Source License, Version 1.1, ALv2 Future License";
@@ -241,13 +241,13 @@
           redistributable = true;
         };
         platforms = platforms.linux ++ platforms.darwin;
-        mainProgram = "spacebot";
+        mainProgram = "james";
       };
     });
 
-  spacebot-tests = craneLib.cargoTest (commonArgs
+  james-tests = craneLib.cargoTest (commonArgs
     // {
-      cargoArtifacts = spacebotTestsCargoArtifacts;
+      cargoArtifacts = jamesTestsCargoArtifacts;
 
       # Skip tests that require ONNX model file and known flaky suites in Nix builds
       cargoTestExtraArgs = "-- --skip memory::search::tests --skip memory::store::tests --skip config::tests::test_llm_provider_tables_parse_with_env_and_lowercase_keys";
@@ -255,25 +255,25 @@
       preBuild = commonBuildEnvWithLinker;
     });
 
-  spacebot-full = pkgs.symlinkJoin {
-    name = "spacebot-full";
-    paths = [spacebot];
+  james-full = pkgs.symlinkJoin {
+    name = "james-full";
+    paths = [james];
 
     buildInputs = [pkgs.makeWrapper];
 
     postBuild = ''
-      wrapProgram $out/bin/spacebot \
+      wrapProgram $out/bin/james \
         --set CHROME_PATH "${pkgs.chromium}/bin/chromium" \
         --set CHROME_FLAGS "--no-sandbox --disable-dev-shm-usage --disable-gpu" \
         --set ORT_LIB_LOCATION "${onnxruntime}/lib"
     '';
 
     meta =
-      spacebot.meta
+      james.meta
       // {
-        description = spacebot.meta.description + " (with browser support)";
+        description = james.meta.description + " (with browser support)";
       };
   };
 in {
-  inherit frontend spacebot spacebot-full spacebot-tests;
+  inherit frontend james james-full james-tests;
 }

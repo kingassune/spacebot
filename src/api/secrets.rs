@@ -504,7 +504,7 @@ pub async fn export_secrets(State(state): State<Arc<ApiState>>) -> impl IntoResp
             if !export.encrypted {
                 response["warning"] = serde_json::json!(
                     "Encryption is not enabled. This export contains plaintext secrets. \
-                     Store it securely or enable encryption first with: spacebot secrets encrypt"
+                     Store it securely or enable encryption first with: james secrets encrypt"
                 );
             }
             Json(response).into_response()

@@ -188,7 +188,7 @@ export function Sidebar({ liveStates, collapsed, onToggle }: SidebarProps) {
 					<Link to="/" className="flex items-center gap-2">
 						<img src={`${BASE_PATH}/ball.png`} alt="" className="h-6 w-6 flex-shrink-0 transition-transform duration-150 ease-out hover:scale-110 active:scale-95" draggable={false} />
 						<span className="whitespace-nowrap font-plex text-sm font-semibold text-sidebar-ink">
-							Spacebot
+							James
 						</span>
 					</Link>
 					<Button

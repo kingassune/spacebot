@@ -5,7 +5,7 @@ description: Multi-agent setup with isolated workspaces, databases, identities, 
 
 # Agents
 
-Spacebot supports multiple agents running on a single instance. Each agent is an independent entity with its own soul, memory, conversations, and messaging bindings. One binary, multiple personalities.
+James supports multiple agents running on a single instance. Each agent is an independent entity with its own soul, memory, conversations, and messaging bindings. One binary, multiple personalities.
 
 Agents communicate through an explicit communication graph — directed links that define who can message whom. The graph also includes org-level humans, giving agents awareness of the people who manage them.
 
@@ -20,7 +20,7 @@ An agent is a self-contained unit. It has:
 - **Messaging bindings** — which Discord guilds, Telegram chats, or webhook endpoints route to this agent
 - **Links** — connections to other agents and humans in the communication graph
 
-An agent does NOT have its own LLM provider credentials, its own binary, or its own process. All agents share the same Spacebot process, the same tokio runtime, and the same API keys. Isolation is at the data level, not the process level.
+An agent does NOT have its own LLM provider credentials, its own binary, or its own process. All agents share the same James process, the same tokio runtime, and the same API keys. Isolation is at the data level, not the process level.
 
 ## Configuration
 
@@ -219,7 +219,7 @@ Returns agents, humans, links, and groups for rendering.
 ## On-Disk Structure
 
 ```
-~/.spacebot/
+~/.james/
 ├── config.toml                           # instance config (agents, links, humans, groups)
 │
 ├── agents/
@@ -230,7 +230,7 @@ Returns agents, humans, links, and groups for rendering.
 │   │   │   ├── USER.md                   # info about the human
 │   │   │   └── ROLE.md                   # responsibilities, scope, escalation rules
 │   │   ├── data/
-│   │   │   ├── spacebot.db              # SQLite (memories, conversations, cron jobs)
+│   │   │   ├── james.db              # SQLite (memories, conversations, cron jobs)
 │   │   │   ├── lancedb/                 # LanceDB (embeddings, FTS)
 │   │   │   ├── config.redb             # redb (agent-level settings)
 │   │   │   ├── settings.redb            # redb (runtime settings)

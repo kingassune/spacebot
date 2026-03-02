@@ -46,10 +46,10 @@ impl McpClientHandler {
             protocol_version: rmcp::model::ProtocolVersion::default(),
             capabilities: rmcp::model::ClientCapabilities::default(),
             client_info: rmcp::model::Implementation {
-                name: "spacebot".to_string(),
+                name: "james".to_string(),
                 title: None,
                 version: env!("CARGO_PKG_VERSION").to_string(),
-                description: Some("Spacebot MCP client".to_string()),
+                description: Some("James MCP client".to_string()),
                 icons: None,
                 website_url: None,
             },

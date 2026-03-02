@@ -453,7 +453,7 @@ async fn handle_command_event(
         );
         return Ok(SlackCommandEventResponse {
             content: SlackMessageContent::new().with_text(format!(
-                "`{}` is not configured on this Spacebot instance.",
+                "`{}` is not configured on this James instance.",
                 command_str
             )),
             response_type: Some(SlackMessageResponseType::Ephemeral),

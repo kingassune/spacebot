@@ -531,7 +531,7 @@ export function Settings() {
 		if (!deviceCodeInfo || !deviceCodeCopied) return;
 		window.open(
 			deviceCodeInfo.verificationUrl,
-			"spacebot-openai-device",
+			"james-openai-device",
 			"popup=true,width=780,height=960,noopener,noreferrer",
 		);
 	};
@@ -1373,7 +1373,7 @@ function SecretsSection() {
 						<p className="text-tiny text-ink-faint">
 							{categoryInput === "tool"
 								? "Workers will have access to this credential via environment variable."
-								: "Only the Spacebot process can read this credential. Workers never see it."}
+								: "Only the James process can read this credential. Workers never see it."}
 						</p>
 					</div>
 
@@ -2150,7 +2150,7 @@ function formatCheckedAt(checkedAt: string | null): string {
 }
 
 function pullableDockerImage(image: string | null): string {
-	if (!image) return "ghcr.io/spacedriveapp/spacebot:latest";
+	if (!image) return "ghcr.io/spacedriveapp/james:latest";
 	return image.split("@")[0] ?? image;
 }
 
@@ -2235,20 +2235,20 @@ function UpdatesSection() {
 			: "Native";
 
 	const dockerComposeCommands = [
-		"docker compose pull spacebot",
-		"docker compose up -d --force-recreate spacebot",
+		"docker compose pull james",
+		"docker compose up -d --force-recreate james",
 	];
 
 	const dockerRunCommands = [
 		`docker pull ${pullableDockerImage(data?.docker_image ?? null)}`,
-		"docker stop spacebot && docker rm spacebot",
+		"docker stop james && docker rm james",
 		"# re-run your docker run command",
 	];
 
 	const nativeCommands = [
 		"git pull",
 		"cargo install --path . --force",
-		"spacebot restart",
+		"james restart",
 	];
 
 	return (

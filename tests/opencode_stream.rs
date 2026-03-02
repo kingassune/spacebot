@@ -4,8 +4,8 @@
 //! Requires an OpenCode server running. Skips if none found.
 
 use futures::StreamExt;
+use james::opencode::types::*;
 use reqwest::Client;
-use spacebot::opencode::types::*;
 
 /// Find a running OpenCode server by checking common ports.
 async fn find_server() -> Option<(String, String)> {

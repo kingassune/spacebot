@@ -468,11 +468,11 @@ impl Messaging for EmailAdapter {
 
         match response {
             OutboundResponse::Text(text) => {
-                self.send_email(&recipient, "Spacebot message", text, None, Vec::new(), None)
+                self.send_email(&recipient, "James message", text, None, Vec::new(), None)
                     .await?;
             }
             OutboundResponse::RichMessage { text, .. } => {
-                self.send_email(&recipient, "Spacebot message", text, None, Vec::new(), None)
+                self.send_email(&recipient, "James message", text, None, Vec::new(), None)
                     .await?;
             }
             OutboundResponse::File {
@@ -484,7 +484,7 @@ impl Messaging for EmailAdapter {
                 let body = caption.unwrap_or_else(|| format!("Attached file: {filename}"));
                 self.send_email(
                     &recipient,
-                    "Spacebot message",
+                    "James message",
                     body,
                     None,
                     Vec::new(),
@@ -494,7 +494,7 @@ impl Messaging for EmailAdapter {
             }
             OutboundResponse::ThreadReply { text, .. }
             | OutboundResponse::Ephemeral { text, .. } => {
-                self.send_email(&recipient, "Spacebot message", text, None, Vec::new(), None)
+                self.send_email(&recipient, "James message", text, None, Vec::new(), None)
                     .await?;
             }
             OutboundResponse::ScheduledMessage { text, post_at } => {
@@ -503,7 +503,7 @@ impl Messaging for EmailAdapter {
                     recipient = %recipient,
                     "email adapter does not support scheduled delivery; sending immediately"
                 );
-                self.send_email(&recipient, "Spacebot message", text, None, Vec::new(), None)
+                self.send_email(&recipient, "James message", text, None, Vec::new(), None)
                     .await?;
             }
             OutboundResponse::Reaction(_)
@@ -911,7 +911,7 @@ fn reply_context_from_message(message: &InboundMessage) -> anyhow::Result<EmailR
         .get("email_subject")
         .and_then(json_value_to_string)
         .map(|value| normalize_reply_subject(&value))
-        .unwrap_or_else(|| "Re: Spacebot reply".to_string());
+        .unwrap_or_else(|| "Re: James reply".to_string());
 
     let in_reply_to = message
         .metadata
@@ -1469,7 +1469,7 @@ fn html_tag_regex() -> &'static Regex {
 fn normalize_reply_subject(subject: &str) -> String {
     let subject = subject.trim();
     if subject.is_empty() {
-        return "Re: Spacebot reply".to_string();
+        return "Re: James reply".to_string();
     }
 
     if subject.to_ascii_lowercase().starts_with("re:") {

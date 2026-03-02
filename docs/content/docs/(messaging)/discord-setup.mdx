@@ -1,11 +1,11 @@
 ---
 title: Discord Setup
-description: Connect Spacebot to Discord.
+description: Connect James to Discord.
 ---
 
 # Discord Setup
 
-Connect Spacebot to your Discord server. Takes about 5 minutes.
+Connect James to your Discord server. Takes about 5 minutes.
 
 You need a **Bot Token** from a Discord application.
 
@@ -47,18 +47,18 @@ Copy the generated URL and open it in your browser to invite the bot.
 
 In Discord, enable Developer Mode (User Settings → Advanced → Developer Mode). Right-click your server name → **Copy Server ID**. This is your guild ID.
 
-## Step 5: Add Token to Spacebot
+## Step 5: Add Token to James
 
-<Tabs items={["Spacebot UI", "TOML Config"]}>
-<Tab value="Spacebot UI">
+<Tabs items={["James UI", "TOML Config"]}>
+<Tab value="James UI">
 
-1. Open your Spacebot dashboard
+1. Open your James dashboard
 2. Go to **Settings** → **Messaging Platforms**
 3. Click **Setup** on the Discord card
 4. Paste your **Bot Token**
 5. Click **Save**
 
-Spacebot connects immediately — no restart needed.
+James connects immediately — no restart needed.
 
 </Tab>
 <Tab value="TOML Config">
@@ -97,8 +97,8 @@ The Discord card on the Settings page shows a green status dot when connected. S
 
 By default the bot responds in every channel it has access to. To limit it, add channel IDs to your binding.
 
-<Tabs items={["Spacebot UI", "TOML Config"]}>
-<Tab value="Spacebot UI">
+<Tabs items={["James UI", "TOML Config"]}>
+<Tab value="James UI">
 
 Go to **Settings** → **Bindings** tab and add channel IDs to your Discord binding.
 
@@ -140,8 +140,8 @@ This works nicely for busy channels where you only want direct interactions.
 
 By default, all DMs are ignored. To allow specific users, add their Discord user IDs.
 
-<Tabs items={["Spacebot UI", "TOML Config"]}>
-<Tab value="Spacebot UI">
+<Tabs items={["James UI", "TOML Config"]}>
+<Tab value="James UI">
 
 Go to **Settings** → **Messaging Platforms** → Discord card and add user IDs to the **DM Allowed Users** list.
 
@@ -172,8 +172,8 @@ Per-binding lists are merged with the instance-wide list. Permission changes hot
 
 Route different Discord servers to different agents.
 
-<Tabs items={["Spacebot UI", "TOML Config"]}>
-<Tab value="Spacebot UI">
+<Tabs items={["James UI", "TOML Config"]}>
+<Tab value="James UI">
 
 Create multiple bindings in the **Bindings** tab, each with a different guild ID and agent.
 

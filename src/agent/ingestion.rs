@@ -11,7 +11,7 @@
 use crate::AgentDeps;
 use crate::ProcessType;
 use crate::config::IngestionConfig;
-use crate::llm::SpacebotModel;
+use crate::llm::JamesModel;
 
 use anyhow::Context as _;
 use rig::agent::AgentBuilder;
@@ -464,7 +464,7 @@ async fn process_chunk(
 
     let routing = deps.runtime_config.routing.load();
     let model_name = routing.resolve(ProcessType::Branch, None).to_string();
-    let model = SpacebotModel::make(&deps.llm_manager, &model_name)
+    let model = JamesModel::make(&deps.llm_manager, &model_name)
         .with_context(&*deps.agent_id, "branch")
         .with_routing((**routing).clone());
 

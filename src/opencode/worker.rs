@@ -131,7 +131,7 @@ impl OpenCodeWorker {
         let session = {
             let guard = server.lock().await;
             guard
-                .create_session(Some(format!("spacebot-worker-{}", self.id)))
+                .create_session(Some(format!("james-worker-{}", self.id)))
                 .await?
         };
         let session_id = session.id.clone();
@@ -342,7 +342,7 @@ impl OpenCodeWorker {
                         let scrubbed = self.scrub_text(text);
 
                         // Leak detection: scan scrubbed text for known secret patterns.
-                        // OpenCode output is not scanned by SpacebotHook, so this is
+                        // OpenCode output is not scanned by JamesHook, so this is
                         // the only leak protection layer for OpenCode workers.
                         if crate::secrets::scrub::scan_for_leaks(&scrubbed).is_some() {
                             tracing::error!(

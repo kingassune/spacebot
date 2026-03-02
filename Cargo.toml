@@ -1,8 +1,8 @@
 [package]
-name = "spacebot"
+name = "james"
 version = "0.2.2"
 edition = "2024"
-default-run = "spacebot"
+default-run = "james"
 
 [dependencies]
 # Core async runtime

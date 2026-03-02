@@ -515,7 +515,7 @@ impl BrowserTool {
         // Use a unique temp dir per launch to avoid singleton lock collisions
         // when multiple workers launch browsers or a previous session crashed.
         let user_data_dir =
-            std::env::temp_dir().join(format!("spacebot-browser-{}", uuid::Uuid::new_v4()));
+            std::env::temp_dir().join(format!("james-browser-{}", uuid::Uuid::new_v4()));
 
         let mut builder = ChromeConfig::builder()
             .no_sandbox()

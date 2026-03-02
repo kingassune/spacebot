@@ -31,7 +31,7 @@ CREATE TABLE cortex_chat_messages (
 
 ## Phase 1: LLM Streaming Infrastructure
 
-`SpacebotModel::stream()` is currently stubbed. Streaming is required for the cortex chat UX and is reusable across the system (channel platform streaming, future features).
+`JamesModel::stream()` is currently stubbed. Streaming is required for the cortex chat UX and is reusable across the system (channel platform streaming, future features).
 
 ### 1a. Anthropic SSE Streaming
 
@@ -47,7 +47,7 @@ Implement `stream_openai()` / `stream_openrouter()` in `src/llm/model.rs`:
 - Parse OpenAI SSE format: `choices[].delta.content` for text, `choices[].delta.tool_calls[]` for tool calls, final chunk has `usage`
 - OpenRouter uses identical format to OpenAI
 
-### 1c. `SpacebotModel::stream()` Implementation
+### 1c. `JamesModel::stream()` Implementation
 
 Wire the stream method to dispatch to the right provider, same as `completion()`. No fallback chain on streaming initially — just the primary model.
 
@@ -55,9 +55,9 @@ Wire the stream method to dispatch to the right provider, same as `completion()`
 
 The current placeholder struct needs to implement Rig's streaming response trait, mapping provider SSE events into Rig's `StreamingCompletionResponse` which yields `StreamingChoice` items for multi-turn tool calling.
 
-### 1e. `StreamingPromptHook` for `SpacebotHook`
+### 1e. `StreamingPromptHook` for `JamesHook`
 
-Implement the streaming variant of the hook in `src/hooks/spacebot.rs`. The key new method is `on_text_delta(&self, delta: &str)` which fires on each text chunk — the cortex chat handler uses this to forward deltas to the client SSE stream.
+Implement the streaming variant of the hook in `src/hooks/james.rs`. The key new method is `on_text_delta(&self, delta: &str)` which fires on each text chunk — the cortex chat handler uses this to forward deltas to the client SSE stream.
 
 ## Phase 2: Cortex Chat Backend
 
@@ -222,7 +222,7 @@ Phases 2d and 2e can run in parallel with Phase 1. Phase 3 is entirely frontend.
 
 **Modified files:**
 - `src/llm/model.rs` — `stream()` impl, provider streaming methods, `RawStreamingResponse`
-- `src/hooks/spacebot.rs` — `StreamingPromptHook` impl
+- `src/hooks/james.rs` — `StreamingPromptHook` impl
 - `src/api/server.rs` — three new endpoints
 - `src/api/state.rs` — cortex chat sessions, channel state registry
 - `src/tools.rs` — `create_cortex_chat_tool_server()` factory

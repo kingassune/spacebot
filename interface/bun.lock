@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "spacebot-interface",
+      "name": "james-interface",
       "dependencies": {
         "@codemirror/language": "^6.12.1",
         "@codemirror/legacy-modes": "^6.5.2",

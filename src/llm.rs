@@ -8,5 +8,5 @@ pub mod providers;
 pub mod routing;
 
 pub use manager::LlmManager;
-pub use model::SpacebotModel;
+pub use model::JamesModel;
 pub use routing::RoutingConfig;

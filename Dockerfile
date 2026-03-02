@@ -39,9 +39,9 @@ COPY build.rs ./
 COPY prompts/ prompts/
 COPY migrations/ migrations/
 COPY src/ src/
-RUN SPACEBOT_SKIP_FRONTEND_BUILD=1 cargo build --release \
-    && mv /build/target/release/spacebot /usr/local/bin/spacebot \
-    && cargo clean -p spacebot --release --target-dir /build/target
+RUN JAMES_SKIP_FRONTEND_BUILD=1 cargo build --release \
+    && mv /build/target/release/james /usr/local/bin/james \
+    && cargo clean -p james --release --target-dir /build/target
 
 # ---- Runtime stage ----
 # Minimal runtime with Chrome runtime libraries for fetcher-downloaded Chromium.
@@ -74,16 +74,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxtst6 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/local/bin/spacebot /usr/local/bin/spacebot
+COPY --from=builder /usr/local/bin/james /usr/local/bin/james
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-ENV SPACEBOT_DIR=/data
-ENV SPACEBOT_DEPLOYMENT=docker
+ENV JAMES_DIR=/data
+ENV JAMES_DEPLOYMENT=docker
 EXPOSE 19898 18789
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
     CMD curl -f http://localhost:19898/api/health || exit 1
 
 ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["spacebot", "start", "--foreground"]
+CMD ["james", "start", "--foreground"]

@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "spacebot",
+      "name": "james",
       "dependencies": {
         "fumadocs-core": "16.6.1",
         "fumadocs-mdx": "14.2.7",

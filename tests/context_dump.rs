@@ -1,6 +1,6 @@
 //! Context composition inspection test.
 //!
-//! Bootstraps from the real ~/.spacebot data directory and dumps the full
+//! Bootstraps from the real ~/.james data directory and dumps the full
 //! context each process type sees — system prompt + tool definitions (names,
 //! descriptions, parameter schemas). This is the complete picture of what
 //! gets sent to the LLM on every turn.
@@ -13,51 +13,50 @@ use std::sync::Arc;
 /// Set up the secrets store thread-local so `secret:` references in config.toml
 /// resolve correctly. Mirrors the bootstrap logic in main.rs.
 fn bootstrap_secrets_for_config() {
-    let instance_dir = spacebot::config::Config::default_instance_dir();
+    let instance_dir = james::config::Config::default_instance_dir();
     let secrets_path = instance_dir.join("data").join("secrets.redb");
     if !secrets_path.exists() {
         return;
     }
-    if let Ok(store) = spacebot::secrets::store::SecretsStore::new(&secrets_path) {
+    if let Ok(store) = james::secrets::store::SecretsStore::new(&secrets_path) {
         let store = Arc::new(store);
         if store.is_encrypted() {
-            let keystore = spacebot::secrets::keystore::platform_keystore();
+            let keystore = james::secrets::keystore::platform_keystore();
             if let Some(key) = keystore.load_key("instance").ok().flatten() {
                 let _ = store.unlock(&key);
             }
         }
-        spacebot::config::set_resolve_secrets_store(store);
+        james::config::set_resolve_secrets_store(store);
     }
 }
 
-/// Bootstrap AgentDeps from the real ~/.spacebot config (same as bulletin test).
-async fn bootstrap_deps() -> anyhow::Result<(spacebot::AgentDeps, spacebot::config::Config)> {
+/// Bootstrap AgentDeps from the real ~/.james config (same as bulletin test).
+async fn bootstrap_deps() -> anyhow::Result<(james::AgentDeps, james::config::Config)> {
     bootstrap_secrets_for_config();
-    let config =
-        spacebot::config::Config::load().context("failed to load ~/.spacebot/config.toml")?;
+    let config = james::config::Config::load().context("failed to load ~/.james/config.toml")?;
 
     let llm_manager = Arc::new(
-        spacebot::llm::LlmManager::new(config.llm.clone())
+        james::llm::LlmManager::new(config.llm.clone())
             .await
             .context("failed to init LLM manager")?,
     );
 
     let embedding_cache_dir = config.instance_dir.join("embedding_cache");
     let embedding_model = Arc::new(
-        spacebot::memory::EmbeddingModel::new(&embedding_cache_dir)
+        james::memory::EmbeddingModel::new(&embedding_cache_dir)
             .context("failed to init embedding model")?,
     );
 
     let resolved_agents = config.resolve_agents();
     let agent_config = resolved_agents.first().context("no agents configured")?;
 
-    let db = spacebot::db::Db::connect(&agent_config.data_dir)
+    let db = james::db::Db::connect(&agent_config.data_dir)
         .await
         .context("failed to connect databases")?;
 
-    let memory_store = spacebot::memory::MemoryStore::new(db.sqlite.clone());
+    let memory_store = james::memory::MemoryStore::new(db.sqlite.clone());
 
-    let embedding_table = spacebot::memory::EmbeddingTable::open_or_create(&db.lance)
+    let embedding_table = james::memory::EmbeddingTable::open_or_create(&db.lance)
         .await
         .context("failed to init embedding table")?;
 
@@ -65,20 +64,20 @@ async fn bootstrap_deps() -> anyhow::Result<(spacebot::AgentDeps, spacebot::conf
         eprintln!("warning: FTS index creation failed: {error}");
     }
 
-    let memory_search = Arc::new(spacebot::memory::MemorySearch::new(
+    let memory_search = Arc::new(james::memory::MemorySearch::new(
         memory_store,
         embedding_table,
         embedding_model,
     ));
-    let task_store = Arc::new(spacebot::tasks::TaskStore::new(db.sqlite.clone()));
+    let task_store = Arc::new(james::tasks::TaskStore::new(db.sqlite.clone()));
 
-    let identity = spacebot::identity::Identity::load(&agent_config.workspace).await;
+    let identity = james::identity::Identity::load(&agent_config.workspace).await;
     let prompts =
-        spacebot::prompts::PromptEngine::new("en").context("failed to init prompt engine")?;
+        james::prompts::PromptEngine::new("en").context("failed to init prompt engine")?;
     let skills =
-        spacebot::skills::SkillSet::load(&config.skills_dir(), &agent_config.skills_dir()).await;
+        james::skills::SkillSet::load(&config.skills_dir(), &agent_config.skills_dir()).await;
 
-    let runtime_config = Arc::new(spacebot::config::RuntimeConfig::new(
+    let runtime_config = Arc::new(james::config::RuntimeConfig::new(
         &config.instance_dir,
         agent_config,
         &config.defaults,
@@ -89,14 +88,14 @@ async fn bootstrap_deps() -> anyhow::Result<(spacebot::AgentDeps, spacebot::conf
 
     let (event_tx, _) = tokio::sync::broadcast::channel(16);
 
-    let agent_id: spacebot::AgentId = Arc::from(agent_config.id.as_str());
-    let mcp_manager = Arc::new(spacebot::mcp::McpManager::new(agent_config.mcp.clone()));
+    let agent_id: james::AgentId = Arc::from(agent_config.id.as_str());
+    let mcp_manager = Arc::new(james::mcp::McpManager::new(agent_config.mcp.clone()));
 
     let sandbox_config = Arc::new(arc_swap::ArcSwap::from_pointee(
         agent_config.sandbox.clone(),
     ));
     let sandbox = Arc::new(
-        spacebot::sandbox::Sandbox::new(
+        james::sandbox::Sandbox::new(
             sandbox_config,
             agent_config.workspace.clone(),
             &config.instance_dir,
@@ -105,7 +104,7 @@ async fn bootstrap_deps() -> anyhow::Result<(spacebot::AgentDeps, spacebot::conf
         .await,
     );
 
-    let deps = spacebot::AgentDeps {
+    let deps = james::AgentDeps {
         agent_id,
         memory_search,
         llm_manager,
@@ -163,7 +162,7 @@ fn format_tool_defs(defs: &[rig::completion::ToolDefinition]) -> String {
 }
 
 /// Build the channel system prompt (mirrors Channel::build_system_prompt).
-fn build_channel_system_prompt(rc: &spacebot::config::RuntimeConfig) -> String {
+fn build_channel_system_prompt(rc: &james::config::RuntimeConfig) -> String {
     let prompt_engine = rc.prompts.load();
     let identity_context = rc.identity.load().render();
     let memory_bulletin = rc.memory_bulletin.load();
@@ -213,15 +212,15 @@ async fn dump_channel_context() {
 
     // Build the actual channel tool server with real tools registered
     let conversation_logger =
-        spacebot::conversation::ConversationLogger::new(deps.sqlite_pool.clone());
-    let channel_store = spacebot::conversation::ChannelStore::new(deps.sqlite_pool.clone());
-    let channel_id: spacebot::ChannelId = Arc::from("test-channel");
+        james::conversation::ConversationLogger::new(deps.sqlite_pool.clone());
+    let channel_store = james::conversation::ChannelStore::new(deps.sqlite_pool.clone());
+    let channel_id: james::ChannelId = Arc::from("test-channel");
     let status_block = Arc::new(tokio::sync::RwLock::new(
-        spacebot::agent::status::StatusBlock::new(),
+        james::agent::status::StatusBlock::new(),
     ));
     let (response_tx, _response_rx) = tokio::sync::mpsc::channel(16);
 
-    let state = spacebot::agent::channel::ChannelState {
+    let state = james::agent::channel::ChannelState {
         channel_id,
         history: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         active_branches: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
@@ -231,7 +230,7 @@ async fn dump_channel_context() {
         status_block,
         deps: deps.clone(),
         conversation_logger,
-        process_run_logger: spacebot::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone()),
+        process_run_logger: james::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone()),
         channel_store,
         screenshot_dir: std::path::PathBuf::from("/tmp/screenshots"),
         logs_dir: std::path::PathBuf::from("/tmp/logs"),
@@ -239,9 +238,9 @@ async fn dump_channel_context() {
     };
 
     let tool_server = rig::tool::server::ToolServer::new().run();
-    let skip_flag = spacebot::tools::new_skip_flag();
-    let replied_flag = spacebot::tools::new_replied_flag();
-    spacebot::tools::add_channel_tools(
+    let skip_flag = james::tools::new_skip_flag();
+    let replied_flag = james::tools::new_replied_flag();
+    james::tools::add_channel_tools(
         &tool_server,
         state,
         response_tx,
@@ -274,7 +273,7 @@ async fn dump_channel_context() {
     let routing = rc.routing.load();
     println!(
         "Model: {}",
-        routing.resolve(spacebot::ProcessType::Channel, None)
+        routing.resolve(james::ProcessType::Channel, None)
     );
     println!("Max turns: {}", **rc.max_turns.load());
 
@@ -300,10 +299,10 @@ async fn dump_branch_context() {
 
     // Build the actual branch tool server
     let conversation_logger =
-        spacebot::conversation::ConversationLogger::new(deps.sqlite_pool.clone());
-    let channel_store = spacebot::conversation::ChannelStore::new(deps.sqlite_pool.clone());
-    let run_logger = spacebot::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone());
-    let branch_tool_server = spacebot::tools::create_branch_tool_server(
+        james::conversation::ConversationLogger::new(deps.sqlite_pool.clone());
+    let channel_store = james::conversation::ChannelStore::new(deps.sqlite_pool.clone());
+    let run_logger = james::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone());
+    let branch_tool_server = james::tools::create_branch_tool_server(
         None,
         deps.agent_id.clone(),
         deps.task_store.clone(),
@@ -332,7 +331,7 @@ async fn dump_branch_context() {
     let routing = rc.routing.load();
     println!(
         "Model: {}",
-        routing.resolve(spacebot::ProcessType::Branch, None)
+        routing.resolve(james::ProcessType::Branch, None)
     );
     println!("Max turns: {}", **rc.branch_max_turns.load());
     println!("History: cloned from channel at fork time (full conversation context)");
@@ -370,7 +369,7 @@ async fn dump_worker_context() {
     let brave_search_key = (**rc.brave_search_key.load()).clone();
     let worker_id = uuid::Uuid::new_v4();
 
-    let worker_tool_server = spacebot::tools::create_worker_tool_server(
+    let worker_tool_server = james::tools::create_worker_tool_server(
         deps.agent_id.clone(),
         worker_id,
         None,
@@ -407,7 +406,7 @@ async fn dump_worker_context() {
     let routing = rc.routing.load();
     println!(
         "Model: {}",
-        routing.resolve(spacebot::ProcessType::Worker, None)
+        routing.resolve(james::ProcessType::Worker, None)
     );
     println!("Turns per segment: 25");
     println!("History: fresh (empty). Workers have no channel context.");
@@ -427,8 +426,8 @@ async fn dump_all_contexts() {
     let workspace_dir = rc.workspace_dir.to_string_lossy();
 
     // Generate bulletin so channel context is complete
-    let logger = spacebot::agent::cortex::CortexLogger::new(deps.sqlite_pool.clone());
-    let bulletin_success = spacebot::agent::cortex::generate_bulletin(&deps, &logger).await;
+    let logger = james::agent::cortex::CortexLogger::new(deps.sqlite_pool.clone());
+    let bulletin_success = james::agent::cortex::generate_bulletin(&deps, &logger).await;
     if bulletin_success {
         let bulletin = rc.memory_bulletin.load();
         println!(
@@ -440,15 +439,15 @@ async fn dump_all_contexts() {
     }
 
     let conversation_logger =
-        spacebot::conversation::ConversationLogger::new(deps.sqlite_pool.clone());
-    let channel_store = spacebot::conversation::ChannelStore::new(deps.sqlite_pool.clone());
+        james::conversation::ConversationLogger::new(deps.sqlite_pool.clone());
+    let channel_store = james::conversation::ChannelStore::new(deps.sqlite_pool.clone());
 
     // ── Channel ──
     let channel_prompt = build_channel_system_prompt(rc);
 
-    let channel_id: spacebot::ChannelId = Arc::from("test-channel");
+    let channel_id: james::ChannelId = Arc::from("test-channel");
     let (response_tx, _response_rx) = tokio::sync::mpsc::channel(16);
-    let state = spacebot::agent::channel::ChannelState {
+    let state = james::agent::channel::ChannelState {
         channel_id,
         history: Arc::new(tokio::sync::RwLock::new(Vec::new())),
         active_branches: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
@@ -456,20 +455,20 @@ async fn dump_all_contexts() {
         active_workers: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
         worker_inputs: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
         status_block: Arc::new(tokio::sync::RwLock::new(
-            spacebot::agent::status::StatusBlock::new(),
+            james::agent::status::StatusBlock::new(),
         )),
         deps: deps.clone(),
         conversation_logger: conversation_logger.clone(),
-        process_run_logger: spacebot::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone()),
+        process_run_logger: james::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone()),
         channel_store: channel_store.clone(),
         screenshot_dir: std::path::PathBuf::from("/tmp/screenshots"),
         logs_dir: std::path::PathBuf::from("/tmp/logs"),
         reply_target_message_id: Arc::new(tokio::sync::RwLock::new(None)),
     };
     let channel_tool_server = rig::tool::server::ToolServer::new().run();
-    let skip_flag = spacebot::tools::new_skip_flag();
-    let replied_flag = spacebot::tools::new_replied_flag();
-    spacebot::tools::add_channel_tools(
+    let skip_flag = james::tools::new_skip_flag();
+    let replied_flag = james::tools::new_replied_flag();
+    james::tools::add_channel_tools(
         &channel_tool_server,
         state,
         response_tx,
@@ -499,8 +498,8 @@ async fn dump_all_contexts() {
     let branch_prompt = prompt_engine
         .render_branch_prompt(&instance_dir, &workspace_dir)
         .expect("failed to render branch prompt");
-    let run_logger = spacebot::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone());
-    let branch_tool_server = spacebot::tools::create_branch_tool_server(
+    let run_logger = james::conversation::ProcessRunLogger::new(deps.sqlite_pool.clone());
+    let branch_tool_server = james::tools::create_branch_tool_server(
         None,
         deps.agent_id.clone(),
         deps.task_store.clone(),
@@ -537,7 +536,7 @@ async fn dump_all_contexts() {
         .expect("failed to render worker prompt");
     let browser_config = (**rc.browser_config.load()).clone();
     let brave_search_key = (**rc.brave_search_key.load()).clone();
-    let worker_tool_server = spacebot::tools::create_worker_tool_server(
+    let worker_tool_server = james::tools::create_worker_tool_server(
         deps.agent_id.clone(),
         uuid::Uuid::new_v4(),
         None,
@@ -573,15 +572,15 @@ async fn dump_all_contexts() {
     println!("\nRouting:");
     println!(
         "  Channel: {}",
-        routing.resolve(spacebot::ProcessType::Channel, None)
+        routing.resolve(james::ProcessType::Channel, None)
     );
     println!(
         "  Branch:  {}",
-        routing.resolve(spacebot::ProcessType::Branch, None)
+        routing.resolve(james::ProcessType::Branch, None)
     );
     println!(
         "  Worker:  {}",
-        routing.resolve(spacebot::ProcessType::Worker, None)
+        routing.resolve(james::ProcessType::Worker, None)
     );
 
     println!("\nContext budget (initial turn, before any history):");

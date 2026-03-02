@@ -6,7 +6,7 @@
 //! into the system prompt as context.
 
 use crate::conversation::history::ProcessRunLogger;
-use crate::llm::SpacebotModel;
+use crate::llm::JamesModel;
 use crate::{AgentDeps, ProcessType};
 
 use rig::agent::{AgentBuilder, HookAction, PromptHook, ToolCallHookAction};
@@ -264,7 +264,7 @@ impl CortexChatSession {
         // Resolve model and build agent
         let routing = self.deps.runtime_config.routing.load();
         let model_name = routing.resolve(ProcessType::Branch, None).to_string();
-        let model = SpacebotModel::make(&self.deps.llm_manager, &model_name)
+        let model = JamesModel::make(&self.deps.llm_manager, &model_name)
             .with_context(&*self.deps.agent_id, "cortex")
             .with_routing((**routing).clone());
 

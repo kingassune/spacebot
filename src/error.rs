@@ -1,4 +1,4 @@
-//! Top-level error types for Spacebot.
+//! Top-level error types for James.
 
 use std::sync::Arc;
 

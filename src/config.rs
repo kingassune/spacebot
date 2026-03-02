@@ -11,8 +11,8 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-const CRON_TIMEZONE_ENV_VAR: &str = "SPACEBOT_CRON_TIMEZONE";
-const USER_TIMEZONE_ENV_VAR: &str = "SPACEBOT_USER_TIMEZONE";
+const CRON_TIMEZONE_ENV_VAR: &str = "JAMES_CRON_TIMEZONE";
+const USER_TIMEZONE_ENV_VAR: &str = "JAMES_USER_TIMEZONE";
 
 /// OpenTelemetry export configuration.
 ///
@@ -33,10 +33,10 @@ pub struct TelemetryConfig {
     pub sample_rate: f64,
 }
 
-/// Top-level Spacebot configuration.
+/// Top-level James configuration.
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// Instance root directory (~/.spacebot or SPACEBOT_DIR).
+    /// Instance root directory (~/.james or JAMES_DIR).
     pub instance_dir: PathBuf,
     /// LLM provider credentials (shared across all agents).
     pub llm: LlmConfig,
@@ -495,8 +495,8 @@ pub(crate) const GEMINI_PROVIDER_BASE_URL: &str =
 /// See <https://openrouter.ai/docs/app-attribution>.
 fn openrouter_extra_headers() -> Vec<(String, String)> {
     vec![
-        ("HTTP-Referer".into(), "https://spacebot.sh/".into()),
-        ("X-OpenRouter-Title".into(), "Spacebot".into()),
+        ("HTTP-Referer".into(), "https://james.sh/".into()),
+        ("X-OpenRouter-Title".into(), "James".into()),
         (
             "X-OpenRouter-Categories".into(),
             "cloud-agent,cli-agent".into(),
@@ -1317,7 +1317,7 @@ impl AgentConfig {
 
 impl ResolvedAgentConfig {
     pub fn sqlite_path(&self) -> PathBuf {
-        self.data_dir.join("spacebot.db")
+        self.data_dir.join("james.db")
     }
     pub fn lancedb_path(&self) -> PathBuf {
         self.data_dir.join("lancedb")
@@ -2733,7 +2733,7 @@ fn default_api_bind() -> String {
 }
 
 fn hosted_api_bind(bind: String) -> String {
-    match std::env::var("SPACEBOT_DEPLOYMENT") {
+    match std::env::var("JAMES_DEPLOYMENT") {
         Ok(deployment) if deployment.eq_ignore_ascii_case("hosted") => "[::]".into(),
         _ => bind,
     }
@@ -3643,14 +3643,14 @@ fn resolve_mcp_configs(
 }
 
 impl Config {
-    /// Resolve the instance directory from env or default (~/.spacebot).
+    /// Resolve the instance directory from env or default (~/.james).
     pub fn default_instance_dir() -> PathBuf {
-        std::env::var("SPACEBOT_DIR")
+        std::env::var("JAMES_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(|_| {
                 dirs::home_dir()
-                    .map(|d| d.join(".spacebot"))
-                    .unwrap_or_else(|| PathBuf::from("./.spacebot"))
+                    .map(|d| d.join(".james"))
+                    .unwrap_or_else(|| PathBuf::from("./.james"))
             })
     }
 
@@ -3698,7 +3698,7 @@ impl Config {
 
         // Check if we have any provider-specific env variables (provider.<name>.*)
         let has_provider_env_vars = std::env::vars().any(|(key, _)| {
-            key.starts_with("SPACEBOT_PROVIDER_")
+            key.starts_with("JAMES_PROVIDER_")
                 || key.starts_with("PROVIDER_")
                 || key.contains("PROVIDER") && key.contains("API_KEY")
         });
@@ -4130,7 +4130,7 @@ impl Config {
         // overrides.  This way users who only set OPENROUTER_API_KEY get
         // openrouter/* routing instead of the hardcoded anthropic/* default.
         let mut routing = infer_routing_from_providers(&llm.providers).unwrap_or_default();
-        if let Ok(model) = std::env::var("SPACEBOT_MODEL") {
+        if let Ok(model) = std::env::var("JAMES_MODEL") {
             routing.channel = model.clone();
             routing.branch = model.clone();
             routing.worker = model.clone();
@@ -4150,13 +4150,13 @@ impl Config {
             routing.compactor = compactor;
             routing.cortex = cortex;
         }
-        if let Ok(channel_model) = std::env::var("SPACEBOT_CHANNEL_MODEL") {
+        if let Ok(channel_model) = std::env::var("JAMES_CHANNEL_MODEL") {
             routing.channel = channel_model;
         }
-        if let Ok(worker_model) = std::env::var("SPACEBOT_WORKER_MODEL") {
+        if let Ok(worker_model) = std::env::var("JAMES_WORKER_MODEL") {
             routing.worker = worker_model;
         }
-        if let Ok(voice_model) = std::env::var("SPACEBOT_VOICE_MODEL") {
+        if let Ok(voice_model) = std::env::var("JAMES_VOICE_MODEL") {
             routing.voice = voice_model;
         }
 
@@ -4213,14 +4213,13 @@ impl Config {
             telemetry: TelemetryConfig {
                 otlp_endpoint: std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT").ok(),
                 otlp_headers: parse_otlp_headers(std::env::var("OTEL_EXPORTER_OTLP_HEADERS").ok())?,
-                service_name: std::env::var("OTEL_SERVICE_NAME")
-                    .unwrap_or_else(|_| "spacebot".into()),
+                service_name: std::env::var("OTEL_SERVICE_NAME").unwrap_or_else(|_| "james".into()),
                 sample_rate: 1.0,
             },
         })
     }
 
-    /// Validate a raw TOML string as a valid Spacebot config.
+    /// Validate a raw TOML string as a valid James config.
     /// Returns Ok(()) if the config is structurally valid, or an error describing what's wrong.
     pub fn validate_toml(content: &str) -> Result<()> {
         let toml_config: TomlConfig =
@@ -5503,7 +5502,7 @@ impl Config {
             let service_name = std::env::var("OTEL_SERVICE_NAME")
                 .ok()
                 .or(toml.telemetry.service_name)
-                .unwrap_or_else(|| "spacebot".into());
+                .unwrap_or_else(|| "james".into());
             let sample_rate = toml.telemetry.sample_rate.unwrap_or(1.0);
             TelemetryConfig {
                 otlp_endpoint,
@@ -5608,9 +5607,9 @@ impl Config {
 /// individual fields to get a snapshot — cheap and contention-free.
 /// The file watcher calls `.store()` to atomically swap in new values.
 pub struct RuntimeConfig {
-    /// Instance root directory (e.g., ~/.spacebot). Immutable after startup.
+    /// Instance root directory (e.g., ~/.james). Immutable after startup.
     pub instance_dir: PathBuf,
-    /// Agent workspace directory (e.g., ~/.spacebot/agents/{id}/workspace). Immutable after startup.
+    /// Agent workspace directory (e.g., ~/.james/agents/{id}/workspace). Immutable after startup.
     pub workspace_dir: PathBuf,
     pub routing: ArcSwap<RoutingConfig>,
     pub compaction: ArcSwap<CompactionConfig>,
@@ -6362,7 +6361,7 @@ pub fn spawn_file_watcher(
     })
 }
 
-/// Interactive first-run onboarding. Creates ~/.spacebot with a minimal config.
+/// Interactive first-run onboarding. Creates ~/.james with a minimal config.
 ///
 /// Returns `Some(path)` if the CLI wizard created a config file, or `None` if
 /// the user chose to set up via the embedded UI (setup mode).
@@ -6371,7 +6370,7 @@ pub fn run_onboarding() -> anyhow::Result<Option<PathBuf>> {
     use std::io::Write;
 
     println!();
-    println!("  Welcome to Spacebot");
+    println!("  Welcome to James");
     println!("  -------------------");
     println!();
     println!("  No configuration found. Let's set things up.");
@@ -6692,10 +6691,10 @@ mod tests {
     impl EnvGuard {
         fn new() -> Self {
             const KEYS: [&str; 26] = [
-                "SPACEBOT_DIR",
-                "SPACEBOT_DEPLOYMENT",
-                "SPACEBOT_CRON_TIMEZONE",
-                "SPACEBOT_USER_TIMEZONE",
+                "JAMES_DIR",
+                "JAMES_DEPLOYMENT",
+                "JAMES_CRON_TIMEZONE",
+                "JAMES_USER_TIMEZONE",
                 "ANTHROPIC_API_KEY",
                 "ANTHROPIC_OAUTH_TOKEN",
                 "OPENAI_API_KEY",
@@ -6732,7 +6731,7 @@ mod tests {
             }
 
             let unique = format!(
-                "spacebot-config-tests-{}-{}",
+                "james-config-tests-{}-{}",
                 std::process::id(),
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
@@ -6743,7 +6742,7 @@ mod tests {
             std::fs::create_dir_all(&test_dir).expect("failed to create test dir");
 
             unsafe {
-                std::env::set_var("SPACEBOT_DIR", &test_dir);
+                std::env::set_var("JAMES_DIR", &test_dir);
             }
 
             Self { vars, test_dir }
@@ -6957,8 +6956,8 @@ openrouter_key = "legacy-openrouter-key"
                 .find(|(key, _)| key == name)
                 .map(|(_, value)| value.as_str())
         };
-        assert_eq!(find_header("HTTP-Referer"), Some("https://spacebot.sh/"));
-        assert_eq!(find_header("X-OpenRouter-Title"), Some("Spacebot"));
+        assert_eq!(find_header("HTTP-Referer"), Some("https://james.sh/"));
+        assert_eq!(find_header("X-OpenRouter-Title"), Some("James"));
         assert_eq!(
             find_header("X-OpenRouter-Categories"),
             Some("cloud-agent,cli-agent")
@@ -7025,8 +7024,8 @@ name = "My OpenRouter"
                 .find(|(key, _)| key == name)
                 .map(|(_, value)| value.as_str())
         };
-        assert_eq!(find_header("HTTP-Referer"), Some("https://spacebot.sh/"));
-        assert_eq!(find_header("X-OpenRouter-Title"), Some("Spacebot"));
+        assert_eq!(find_header("HTTP-Referer"), Some("https://james.sh/"));
+        assert_eq!(find_header("X-OpenRouter-Title"), Some("James"));
         assert_eq!(
             find_header("X-OpenRouter-Categories"),
             Some("cloud-agent,cli-agent")
@@ -7128,7 +7127,7 @@ name = "My OpenRouter"
         let _env = EnvGuard::new();
 
         unsafe {
-            std::env::set_var("SPACEBOT_DEPLOYMENT", "hosted");
+            std::env::set_var("JAMES_DEPLOYMENT", "hosted");
         }
 
         let toml = r#"
@@ -7150,7 +7149,7 @@ bind = "127.0.0.1"
         let _env = EnvGuard::new();
 
         unsafe {
-            std::env::set_var("SPACEBOT_DEPLOYMENT", "hosted");
+            std::env::set_var("JAMES_DEPLOYMENT", "hosted");
         }
 
         let config = Config::load_from_env(&Config::default_instance_dir())

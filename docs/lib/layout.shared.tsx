@@ -1,16 +1,16 @@
 import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 
-// Spacebot GitHub repository
+// James GitHub repository
 export const gitConfig = {
   user: 'spacedriveapp',
-  repo: 'spacebot',
+  repo: 'james',
   branch: 'main',
 };
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: 'Spacebot',
+      title: 'James',
     },
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
