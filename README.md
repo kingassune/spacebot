@@ -559,6 +559,8 @@ Formatting is still enforced in CI, but the hook catches it earlier by running `
 
 ## Security Research Platform
 
+> **All security capabilities are for authorized use only.** James does not facilitate unauthorized access to systems. Use only against systems you own or have explicit written permission to test.
+
 James extends its agentic architecture to professional security research and assessment workflows. The same concurrent, non-blocking process model that handles team communications is applied to security analysis — running recon, static analysis, and report generation in parallel without blocking the conversation.
 
 ### Trail of Bits Security Skills

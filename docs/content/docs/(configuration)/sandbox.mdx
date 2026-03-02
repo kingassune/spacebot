@@ -103,7 +103,7 @@ A worker running `printenv` sees only:
 | `TERM` | Always | From parent (if set) |
 | `passthrough_env` entries | Config | User-configured forwarding |
 
-Workers never see `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, `SPACEBOT_*` internal vars, or any other environment variables from the parent process.
+Workers never see `ANTHROPIC_API_KEY`, `DISCORD_BOT_TOKEN`, `JAMES_*` internal vars, or any other environment variables from the parent process.
 
 ### passthrough_env
 
@@ -147,7 +147,7 @@ The `GET /agents/tools` API endpoint lists installed binaries for dashboard obse
 
 ## Leak Detection
 
-All tool output (shell, exec, file, browser) is scanned for known secret patterns before being returned to the LLM. This runs in the `SpacebotHook` after every tool execution.
+All tool output (shell, exec, file, browser) is scanned for known secret patterns before being returned to the LLM. This runs in the `JamesHook` after every tool execution.
 
 Detected patterns include:
 
@@ -214,7 +214,7 @@ The sandbox is one layer in a defense-in-depth model:
 | **Env sanitization** | Clean environment, no inherited secrets | All subprocesses (including passthrough mode) |
 | **File tool workspace guard** | Path validation against workspace boundary | File tool only (in-process) |
 | **Exec env var blocklist** | Blocks `LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, etc. | Exec tool |
-| **Leak detection** | Regex scan of all tool output for secret patterns | All tools via SpacebotHook |
+| **Leak detection** | Regex scan of all tool output for secret patterns | All tools via JamesHook |
 | **Output scrubbing** | Exact-match redaction of known secret values | Worker output, status updates, OpenCode events |
 | **[Secret store](/docs/secrets)** | Categorized credential storage, config resolution, tool secret injection | All agents |
 | **Permissions system** | Application-level tool access control | All tools |

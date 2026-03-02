@@ -55,7 +55,7 @@ export function Overview({liveStates, activeLinks}: OverviewProps) {
 			<div className="flex items-center justify-between border-b border-app-line bg-app-darkBox/50 px-6 py-3.5">
 				<div className="flex items-center gap-4">
 					<div className="flex items-center gap-2">
-						<h1 className="font-plex text-sm font-medium text-ink">Spacebot</h1>
+						<h1 className="font-plex text-sm font-medium text-ink">James</h1>
 						{statusData ? (
 							<div className="h-2 w-2 rounded-full bg-green-500" />
 						) : (

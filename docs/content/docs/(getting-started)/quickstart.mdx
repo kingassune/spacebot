@@ -1,31 +1,31 @@
 ---
 title: Quickstart
-description: Get Spacebot running locally in under 5 minutes.
+description: Get James running locally in under 5 minutes.
 ---
 
 # Quickstart
 
-Get Spacebot running locally in under 5 minutes.
+Get James running locally in under 5 minutes.
 
 ## Docker (fastest)
 
 ```bash
 docker run -d \
-  --name spacebot \
-  -v spacebot-data:/data \
+  --name james \
+  -v james-data:/data \
   -p 19898:19898 \
-  ghcr.io/spacedriveapp/spacebot:latest
+  ghcr.io/spacedriveapp/james:latest
 ```
 
 The web UI is available at `http://localhost:19898`. On first launch with no API keys configured, the UI will prompt you to add a provider key in Settings. You can also pass keys as environment variables:
 
 ```bash
 docker run -d \
-  --name spacebot \
+  --name james \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
-  -v spacebot-data:/data \
+  -v james-data:/data \
   -p 19898:19898 \
-  ghcr.io/spacedriveapp/spacebot:latest
+  ghcr.io/spacedriveapp/james:latest
 ```
 
 See [Docker deployment](/docs/docker) for image variants, compose files, and configuration options.
@@ -33,8 +33,8 @@ See [Docker deployment](/docs/docker) for image variants, compose files, and con
 To update Docker installs, pull and recreate the container:
 
 ```bash
-docker pull ghcr.io/spacedriveapp/spacebot:latest
-docker stop spacebot && docker rm spacebot
+docker pull ghcr.io/spacedriveapp/james:latest
+docker stop james && docker rm james
 # re-run your docker run command
 ```
 
@@ -52,8 +52,8 @@ You can also manage updates from **Settings → Updates** in the web UI.
 ### Install
 
 ```bash
-git clone https://github.com/spacedriveapp/spacebot.git
-cd spacebot
+git clone https://github.com/spacedriveapp/james.git
+cd james
 
 # Optional: build the web UI (React + Vite, embedded into the binary)
 cd interface && bun install && cd ..
@@ -66,7 +66,7 @@ The `build.rs` script automatically runs `bun run build` during compilation if `
 
 ## Configure
 
-Spacebot needs at least one LLM provider key. You can either set an environment variable or create a config file.
+James needs at least one LLM provider key. You can either set an environment variable or create a config file.
 
 ### Option A: Environment variable (fastest)
 
@@ -74,15 +74,15 @@ Spacebot needs at least one LLM provider key. You can either set an environment 
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-This is enough. Spacebot will create a default `main` agent with sensible defaults and no messaging adapters. The web UI and HTTP API will be available on `http://localhost:19898`.
+This is enough. James will create a default `main` agent with sensible defaults and no messaging adapters. The web UI and HTTP API will be available on `http://localhost:19898`.
 
 ### Option B: Interactive onboarding
 
-Just run `spacebot` with no config file and no API key env var set. It will walk you through provider selection, API key entry, agent naming, and optional Discord setup.
+Just run `james` with no config file and no API key env var set. It will walk you through provider selection, API key entry, agent naming, and optional Discord setup.
 
 ### Option C: Config file
 
-Create `~/.spacebot/config.toml`:
+Create `~/.james/config.toml`:
 
 ```toml
 [llm]
@@ -113,35 +113,35 @@ See [Configuration](/docs/config) for the full config reference.
 
 ```bash
 # Background daemon (default)
-spacebot
+james
 
 # Foreground with debug logging (recommended for first run / development)
-spacebot start -f -d
+james start -f -d
 
 # During development with cargo
 cargo run -- start -f -d
 ```
 
-On first launch, Spacebot automatically creates:
+On first launch, James automatically creates:
 
-- `~/.spacebot/` — instance directory
-- `~/.spacebot/agents/main/data/` — SQLite, LanceDB, and redb databases
-- `~/.spacebot/agents/main/workspace/` — identity files and ingest directory
+- `~/.james/` — instance directory
+- `~/.james/agents/main/data/` — SQLite, LanceDB, and redb databases
+- `~/.james/agents/main/workspace/` — identity files and ingest directory
 
 ## Daemon management
 
 ```bash
-spacebot status    # show pid and uptime
-spacebot stop      # graceful shutdown
-spacebot restart   # stop + start
-spacebot restart -f -d  # restart in foreground with debug
+james status    # show pid and uptime
+james stop      # graceful shutdown
+james restart   # stop + start
+james restart -f -d  # restart in foreground with debug
 ```
 
-Logs go to `~/.spacebot/agents/{id}/data/logs/` in daemon mode, or stderr in foreground mode.
+Logs go to `~/.james/agents/{id}/data/logs/` in daemon mode, or stderr in foreground mode.
 
 ## Identity files
 
-Each agent has three optional markdown files in its workspace (`~/.spacebot/agents/{id}/workspace/`):
+Each agent has three optional markdown files in its workspace (`~/.james/agents/{id}/workspace/`):
 
 | File          | Purpose                                  |
 | ------------- | ---------------------------------------- |
@@ -175,12 +175,12 @@ cd interface && bun run dev
 | Telegram | Supported | [Telegram setup](/docs/telegram-setup) |
 | Webhook  | Supported | [Config reference](/docs/config)        |
 
-No messaging adapters are required. Without them, Spacebot is accessible via the web UI and HTTP API.
+No messaging adapters are required. Without them, James is accessible via the web UI and HTTP API.
 
 ## CLI flags reference
 
 ```
-spacebot [OPTIONS] [COMMAND]
+james [OPTIONS] [COMMAND]
 
 Commands:
   start     Start the daemon [default]

@@ -54,7 +54,7 @@ const GROUP_COLORS = [
 
 // -- Position persistence --
 
-const POSITIONS_KEY = "spacebot:topology:positions";
+const POSITIONS_KEY = "james:topology:positions";
 
 type SavedPositions = Record<string, { x: number; y: number }>;
 
@@ -82,7 +82,7 @@ function savePositions(nodes: Node[]) {
 
 // -- Handle persistence --
 
-const HANDLES_KEY = "spacebot:topology:handles";
+const HANDLES_KEY = "james:topology:handles";
 
 type SavedHandles = Record<string, { sourceHandle: string; targetHandle: string }>;
 
