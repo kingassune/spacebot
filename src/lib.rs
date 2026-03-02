@@ -28,6 +28,12 @@ pub mod tasks;
 pub mod telemetry;
 pub mod tools;
 pub mod update;
+pub mod red_team;
+pub mod blue_team;
+pub mod exploit_engine;
+pub mod pentest;
+pub mod blockchain_security;
+pub mod meta_agent;
 
 pub use error::{Error, Result};
 
