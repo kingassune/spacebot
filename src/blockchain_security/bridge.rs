@@ -89,14 +89,13 @@ pub fn analyze_bridge_contract(
     if matches!(
         bridge_type,
         BridgeType::MessagePassing | BridgeType::Optimistic
-    ) {
-        if !source.contains("verifyMessage") && !source.contains("_checkMessage") {
-            vulnerabilities.push(BridgeVulnerability::IncompleteVerification);
-            findings
-                .push("Message passing bridge lacks explicit message verification routine.".into());
-            recommendations
-                .push("Implement verifyMessage with merkle-proof or ZK verification.".into());
-        }
+    ) && !source.contains("verifyMessage")
+        && !source.contains("_checkMessage")
+    {
+        vulnerabilities.push(BridgeVulnerability::IncompleteVerification);
+        findings.push("Message passing bridge lacks explicit message verification routine.".into());
+        recommendations
+            .push("Implement verifyMessage with merkle-proof or ZK verification.".into());
     }
 
     // Optimistic exit window
