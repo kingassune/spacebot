@@ -25,10 +25,7 @@ pub struct CompiledPlugin {
 }
 
 pub fn build_plugin_from_intel(intel: &ThreatIntelReport) -> anyhow::Result<PluginManifest> {
-    let name = format!(
-        "plugin-{}",
-        intel.title.to_lowercase().replace(' ', "-")
-    );
+    let name = format!("plugin-{}", intel.title.to_lowercase().replace(' ', "-"));
 
     let capabilities: Vec<String> = intel
         .techniques
@@ -47,7 +44,10 @@ pub fn build_plugin_from_intel(intel: &ThreatIntelReport) -> anyhow::Result<Plug
     Ok(PluginManifest {
         name: name.clone(),
         version: "0.1.0".to_string(),
-        description: format!("Detection plugin derived from threat intel: {}", intel.title),
+        description: format!(
+            "Detection plugin derived from threat intel: {}",
+            intel.title
+        ),
         capabilities,
         dependencies: vec!["siem-connector".to_string(), "ioc-feed".to_string()],
         entry_point: format!("{name}::run"),
@@ -75,7 +75,10 @@ pub fn compile_plugin(manifest: &PluginManifest) -> anyhow::Result<CompiledPlugi
 
 pub fn validate_plugin_manifest(manifest: &PluginManifest) -> anyhow::Result<()> {
     anyhow::ensure!(!manifest.name.is_empty(), "plugin name must not be empty");
-    anyhow::ensure!(!manifest.version.is_empty(), "plugin version must not be empty");
+    anyhow::ensure!(
+        !manifest.version.is_empty(),
+        "plugin version must not be empty"
+    );
     Ok(())
 }
 

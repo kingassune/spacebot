@@ -125,7 +125,8 @@ pub fn detect_flash_loan_vulnerability(contract: &str) -> anyhow::Result<Vec<Fla
 
 /// Analyse contract source for oracle dependency and price-feed risk.
 pub fn analyze_oracle_dependency(contract: &str) -> anyhow::Result<OracleRiskAssessment> {
-    let uses_chainlink = contract.contains("AggregatorV3Interface") || contract.contains("latestRoundData");
+    let uses_chainlink =
+        contract.contains("AggregatorV3Interface") || contract.contains("latestRoundData");
     let uses_uniswap_oracle = contract.contains("consult(") || contract.contains("observe(");
     let uses_twap = contract.contains("TWAP") || contract.contains("twap") || uses_uniswap_oracle;
 
@@ -139,7 +140,8 @@ pub fn analyze_oracle_dependency(contract: &str) -> anyhow::Result<OracleRiskAss
         (
             "Uniswap V2/V3 TWAP".into(),
             "Medium – short observation windows are susceptible to flash-loan manipulation.".into(),
-            "Use a TWAP window of at least 30 minutes and cross-validate with a secondary feed.".into(),
+            "Use a TWAP window of at least 30 minutes and cross-validate with a secondary feed."
+                .into(),
         )
     } else if contract.contains("getPrice") || contract.contains("price()") {
         (
@@ -151,7 +153,8 @@ pub fn analyze_oracle_dependency(contract: &str) -> anyhow::Result<OracleRiskAss
         (
             "None detected".into(),
             "N/A".into(),
-            "Ensure any price-sensitive logic uses a reputable, manipulation-resistant oracle.".into(),
+            "Ensure any price-sensitive logic uses a reputable, manipulation-resistant oracle."
+                .into(),
         )
     };
 
@@ -183,7 +186,10 @@ pub fn simulate_sandwich_attack(tx: &Transaction) -> anyhow::Result<SandwichResu
         vulnerable: true,
         estimated_profit_wei,
         attack_sequence: vec![
-            format!("1. Frontrun: buy before tx {} with higher gas price.", tx.hash),
+            format!(
+                "1. Frontrun: buy before tx {} with higher gas price.",
+                tx.hash
+            ),
             format!("2. Victim tx {} executes at worse price.", tx.hash),
             "3. Backrun: sell immediately after victim tx.".into(),
         ],

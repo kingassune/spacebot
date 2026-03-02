@@ -83,7 +83,9 @@ pub fn analyze_gaps(current: &CapabilityMap, threats: &[ThreatProfile]) -> Vec<C
                 gaps.push(CapabilityGap {
                     domain: threat.name.clone(),
                     missing_capability: format!("Technique coverage: {technique}"),
-                    priority: if threat.sophistication == "high" || threat.sophistication == "advanced" {
+                    priority: if threat.sophistication == "high"
+                        || threat.sophistication == "advanced"
+                    {
                         GapPriority::Critical
                     } else {
                         GapPriority::Medium
@@ -117,7 +119,10 @@ pub fn recommend_extensions(gaps: &[CapabilityGap]) -> Vec<ExtensionRecommendati
                 } else {
                     0.15
                 },
-                prerequisites: vec!["threat-intel-feed".to_string(), "log-aggregation".to_string()],
+                prerequisites: vec![
+                    "threat-intel-feed".to_string(),
+                    "log-aggregation".to_string(),
+                ],
             }
         })
         .collect()
@@ -156,10 +161,7 @@ pub fn build_initial_capability_map() -> CapabilityMap {
             coverage_percent: 30.0,
         },
     ];
-    let coverage_domains = capabilities
-        .iter()
-        .map(|c| c.domain.clone())
-        .collect();
+    let coverage_domains = capabilities.iter().map(|c| c.domain.clone()).collect();
     CapabilityMap {
         capabilities,
         coverage_domains,

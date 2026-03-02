@@ -48,7 +48,10 @@ pub struct BridgeAuditResult {
 }
 
 /// Audit a bridge contract source for known vulnerability patterns.
-pub fn analyze_bridge_contract(source: &str, bridge_type: &BridgeType) -> anyhow::Result<BridgeAuditResult> {
+pub fn analyze_bridge_contract(
+    source: &str,
+    bridge_type: &BridgeType,
+) -> anyhow::Result<BridgeAuditResult> {
     let mut vulnerabilities = Vec::new();
     let mut findings = Vec::new();
     let mut recommendations = Vec::new();
@@ -56,30 +59,43 @@ pub fn analyze_bridge_contract(source: &str, bridge_type: &BridgeType) -> anyhow
     // Nonce / replay checks
     if !source.contains("nonce") && !source.contains("messageId") {
         vulnerabilities.push(BridgeVulnerability::MissingNonceCheck);
-        findings.push("No nonce or message-ID deduplication found; replay attacks are possible.".into());
-        recommendations.push("Maintain a consumed-nonce mapping and reject duplicate messages.".into());
+        findings.push(
+            "No nonce or message-ID deduplication found; replay attacks are possible.".into(),
+        );
+        recommendations
+            .push("Maintain a consumed-nonce mapping and reject duplicate messages.".into());
     }
 
     // Signature verification
-    if source.contains("ecrecover") && !source.contains("require(signer") && !source.contains("_verify(") {
+    if source.contains("ecrecover")
+        && !source.contains("require(signer")
+        && !source.contains("_verify(")
+    {
         vulnerabilities.push(BridgeVulnerability::SignatureForge);
         findings.push("ecrecover result is not validated against an expected signer set.".into());
-        recommendations.push("Compare ecrecover output against the authorised validator set.".into());
+        recommendations
+            .push("Compare ecrecover output against the authorised validator set.".into());
     }
 
     // Unbounded mint
     if (source.contains("mint(") || source.contains("_mint(")) && !source.contains("totalSupply") {
         vulnerabilities.push(BridgeVulnerability::UnboundedMint);
         findings.push("Mint function detected without supply cap; unlimited issuance risk.".into());
-        recommendations.push("Enforce a supply cap tied to the locked collateral on the source chain.".into());
+        recommendations
+            .push("Enforce a supply cap tied to the locked collateral on the source chain.".into());
     }
 
     // Message verification completeness
-    if matches!(bridge_type, BridgeType::MessagePassing | BridgeType::Optimistic) {
+    if matches!(
+        bridge_type,
+        BridgeType::MessagePassing | BridgeType::Optimistic
+    ) {
         if !source.contains("verifyMessage") && !source.contains("_checkMessage") {
             vulnerabilities.push(BridgeVulnerability::IncompleteVerification);
-            findings.push("Message passing bridge lacks explicit message verification routine.".into());
-            recommendations.push("Implement verifyMessage with merkle-proof or ZK verification.".into());
+            findings
+                .push("Message passing bridge lacks explicit message verification routine.".into());
+            recommendations
+                .push("Implement verifyMessage with merkle-proof or ZK verification.".into());
         }
     }
 
@@ -87,7 +103,8 @@ pub fn analyze_bridge_contract(source: &str, bridge_type: &BridgeType) -> anyhow
     if matches!(bridge_type, BridgeType::Optimistic) && !source.contains("challengePeriod") {
         vulnerabilities.push(BridgeVulnerability::ExitWindowBypass);
         findings.push("Optimistic bridge has no challengePeriod enforced on-chain.".into());
-        recommendations.push("Enforce a minimum 7-day challenge window before finalising exits.".into());
+        recommendations
+            .push("Enforce a minimum 7-day challenge window before finalising exits.".into());
     }
 
     let deduction = (vulnerabilities.len() as u8).saturating_mul(12);
@@ -148,7 +165,9 @@ pub fn generate_bridge_checklist(bridge_type: &BridgeType) -> Vec<String> {
         }
         BridgeType::TrustedRelay => {
             checklist.push("Assess relayer key management and rotation procedures.".into());
-            checklist.push("Implement multi-relayer consensus to reduce single point of failure.".into());
+            checklist.push(
+                "Implement multi-relayer consensus to reduce single point of failure.".into(),
+            );
         }
     }
 

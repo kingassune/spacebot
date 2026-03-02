@@ -2968,7 +2968,9 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
         SecurityCommand::Exploit(exploit_cmd) => match exploit_cmd {
             ExploitCommand::Fuzz { target } => {
                 println!("Fuzzing target: {target}");
-                println!("Use 'james start' and ask James to start a fuzzing campaign for: {target}");
+                println!(
+                    "Use 'james start' and ask James to start a fuzzing campaign for: {target}"
+                );
             }
             ExploitCommand::Triage { crash_dir } => {
                 println!("Triaging crashes in: {crash_dir}");
@@ -2976,7 +2978,9 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             }
             ExploitCommand::Develop { target } => {
                 println!("Exploit development for: {target}");
-                println!("Use 'james start' and ask James to begin exploit development for: {target}");
+                println!(
+                    "Use 'james start' and ask James to begin exploit development for: {target}"
+                );
             }
             ExploitCommand::Payload { arch, os } => {
                 println!("Generating payload for {arch}/{os}");
@@ -2984,11 +2988,15 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             }
             ExploitCommand::Research { target } => {
                 println!("Vulnerability research for: {target}");
-                println!("Use 'james start' and ask James to research vulnerabilities in: {target}");
+                println!(
+                    "Use 'james start' and ask James to research vulnerabilities in: {target}"
+                );
             }
             ExploitCommand::ZeroDay { target } => {
                 println!("Zero-day pipeline for: {target}");
-                println!("Use 'james start' and ask James to run the zero-day pipeline for: {target}");
+                println!(
+                    "Use 'james start' and ask James to run the zero-day pipeline for: {target}"
+                );
             }
         },
         SecurityCommand::Meta(meta_cmd) => match meta_cmd {

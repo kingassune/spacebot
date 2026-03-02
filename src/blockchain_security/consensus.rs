@@ -60,7 +60,10 @@ pub struct FinalityAnalysis {
 }
 
 /// Analyse a consensus mechanism and enumerate relevant vulnerabilities.
-pub fn analyze_consensus(consensus_type: &ConsensusType, validator_count: u32) -> ConsensusAnalysis {
+pub fn analyze_consensus(
+    consensus_type: &ConsensusType,
+    validator_count: u32,
+) -> ConsensusAnalysis {
     let (finality_time_secs, vulnerabilities): (u64, Vec<ConsensusAttack>) = match consensus_type {
         ConsensusType::ProofOfWork | ConsensusType::Nakamoto => (
             3600,
@@ -106,10 +109,7 @@ pub fn analyze_consensus(consensus_type: &ConsensusType, validator_count: u32) -
         ),
         ConsensusType::Avalanche => (
             1,
-            vec![
-                ConsensusAttack::SybilAttack,
-                ConsensusAttack::EclipseAttack,
-            ],
+            vec![ConsensusAttack::SybilAttack, ConsensusAttack::EclipseAttack],
         ),
         ConsensusType::HybridPoW => (
             1800,
@@ -152,14 +152,15 @@ pub fn assess_finality(consensus_type: &ConsensusType) -> FinalityAnalysis {
             reorg_risk: "Medium – depends on delegate set honesty.".into(),
             safe_confirmation_blocks: 3,
         },
-        ConsensusType::Bft | ConsensusType::Pbft | ConsensusType::Tendermint | ConsensusType::HotStuff => {
-            FinalityAnalysis {
-                is_probabilistic: false,
-                finality_blocks: 1,
-                reorg_risk: "Very low – instant finality; no reorgs after commit.".into(),
-                safe_confirmation_blocks: 1,
-            }
-        }
+        ConsensusType::Bft
+        | ConsensusType::Pbft
+        | ConsensusType::Tendermint
+        | ConsensusType::HotStuff => FinalityAnalysis {
+            is_probabilistic: false,
+            finality_blocks: 1,
+            reorg_risk: "Very low – instant finality; no reorgs after commit.".into(),
+            safe_confirmation_blocks: 1,
+        },
         ConsensusType::Avalanche => FinalityAnalysis {
             is_probabilistic: false,
             finality_blocks: 1,
@@ -181,8 +182,12 @@ pub fn assess_validator_security(validators: &[ValidatorInfo]) -> String {
         return "No validator data available.".into();
     }
 
-    let avg_uptime = validators.iter().map(|v| v.uptime_percent).sum::<f64>() / validators.len() as f64;
-    let slashed_count = validators.iter().filter(|v| !v.slashing_history.is_empty()).count();
+    let avg_uptime =
+        validators.iter().map(|v| v.uptime_percent).sum::<f64>() / validators.len() as f64;
+    let slashed_count = validators
+        .iter()
+        .filter(|v| !v.slashing_history.is_empty())
+        .count();
 
     let risk = if avg_uptime < 90.0 || slashed_count > validators.len() / 4 {
         "HIGH"
@@ -206,7 +211,10 @@ pub fn calculate_attack_threshold(consensus_type: &ConsensusType) -> f64 {
     match consensus_type {
         ConsensusType::ProofOfWork | ConsensusType::Nakamoto | ConsensusType::HybridPoW => 51.0,
         ConsensusType::ProofOfStake | ConsensusType::DelegatedPoS => 33.4,
-        ConsensusType::Bft | ConsensusType::Pbft | ConsensusType::Tendermint | ConsensusType::HotStuff => 33.4,
+        ConsensusType::Bft
+        | ConsensusType::Pbft
+        | ConsensusType::Tendermint
+        | ConsensusType::HotStuff => 33.4,
         ConsensusType::Avalanche => 51.0,
     }
 }

@@ -7,7 +7,7 @@ pub mod defi;
 pub mod wallet;
 pub mod zk;
 
-use contract_analysis::{Chain, ContractAnalyzer, AnalysisResult};
+use contract_analysis::{AnalysisResult, Chain, ContractAnalyzer};
 
 /// Top-level engine that dispatches contract analysis across all supported chains.
 #[derive(Debug, Clone)]

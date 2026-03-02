@@ -53,11 +53,15 @@ pub fn audit_wallet(wallet_address: &str, wallet_type: &WalletType) -> WalletSec
 
     match wallet_type {
         WalletType::Eoa => {
-            recommendations.push("Consider migrating to a smart wallet or hardware wallet for improved security.".into());
+            recommendations.push(
+                "Consider migrating to a smart wallet or hardware wallet for improved security."
+                    .into(),
+            );
             recommendations.push("Regularly rotate approvals and revoke unused allowances.".into());
         }
         WalletType::Multisig => {
-            recommendations.push("Ensure signing keys are held on separate hardware devices.".into());
+            recommendations
+                .push("Ensure signing keys are held on separate hardware devices.".into());
             recommendations.push("Use a time-lock on high-value transactions.".into());
         }
         WalletType::SmartWallet => {
@@ -70,7 +74,9 @@ pub fn audit_wallet(wallet_address: &str, wallet_type: &WalletType) -> WalletSec
         }
         WalletType::Hardware => {
             recommendations.push("Keep firmware updated and verify device authenticity.".into());
-            recommendations.push("Store the recovery phrase offline in a geographically diverse location.".into());
+            recommendations.push(
+                "Store the recovery phrase offline in a geographically diverse location.".into(),
+            );
         }
         WalletType::Social => {
             vulnerabilities.push(WalletVulnerability::PhishingApproval);

@@ -49,7 +49,11 @@ pub struct WorkflowExecution {
 
 pub fn create_workflow(name: &str, steps: Vec<WorkflowStep>) -> WorkflowDefinition {
     WorkflowDefinition {
-        id: format!("{}-{}", name.to_lowercase().replace(' ', "-"), Utc::now().timestamp()),
+        id: format!(
+            "{}-{}",
+            name.to_lowercase().replace(' ', "-"),
+            Utc::now().timestamp()
+        ),
         name: name.to_string(),
         steps,
         triggers: Vec::new(),

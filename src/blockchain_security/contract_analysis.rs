@@ -178,7 +178,9 @@ pub fn analyze_solidity(source: &str) -> anyhow::Result<Vec<Finding>> {
             pattern: VulnerabilityPattern::TxOrigin,
             severity: SeverityLevel::High,
             line_number: line_of(source, "tx.origin"),
-            description: "Use of tx.origin for authentication can be exploited via phishing contracts.".into(),
+            description:
+                "Use of tx.origin for authentication can be exploited via phishing contracts."
+                    .into(),
             recommendation: "Replace tx.origin with msg.sender for authentication checks.".into(),
             code_snippet: snippet(source, "tx.origin"),
         });
@@ -187,14 +189,20 @@ pub fn analyze_solidity(source: &str) -> anyhow::Result<Vec<Finding>> {
 
     // selfdestruct / suicide
     if source.contains("selfdestruct") || source.contains("suicide(") {
-        let keyword = if source.contains("selfdestruct") { "selfdestruct" } else { "suicide(" };
+        let keyword = if source.contains("selfdestruct") {
+            "selfdestruct"
+        } else {
+            "suicide("
+        };
         findings.push(Finding {
             id: format!("SOL-{id_counter:03}"),
             pattern: VulnerabilityPattern::SelfDestruct,
             severity: SeverityLevel::Critical,
             line_number: line_of(source, keyword),
-            description: "Unprotected selfdestruct can destroy the contract and drain Ether.".into(),
-            recommendation: "Gate selfdestruct behind strict access control or remove it entirely.".into(),
+            description: "Unprotected selfdestruct can destroy the contract and drain Ether."
+                .into(),
+            recommendation: "Gate selfdestruct behind strict access control or remove it entirely."
+                .into(),
             code_snippet: snippet(source, keyword),
         });
         id_counter += 1;
@@ -208,7 +216,8 @@ pub fn analyze_solidity(source: &str) -> anyhow::Result<Vec<Finding>> {
             severity: SeverityLevel::Medium,
             line_number: line_of(source, "block.timestamp"),
             description: "block.timestamp can be manipulated by miners within ~15 seconds.".into(),
-            recommendation: "Use block.number or a commit-reveal scheme for time-sensitive logic.".into(),
+            recommendation: "Use block.number or a commit-reveal scheme for time-sensitive logic."
+                .into(),
             code_snippet: snippet(source, "block.timestamp"),
         });
         id_counter += 1;
@@ -223,8 +232,12 @@ pub fn analyze_solidity(source: &str) -> anyhow::Result<Vec<Finding>> {
                 pattern: VulnerabilityPattern::UncheckedCallReturn,
                 severity: SeverityLevel::High,
                 line_number: line_of(source, ".call{value"),
-                description: "Low-level call return value is not checked; failed transfers go unnoticed.".into(),
-                recommendation: "Check the bool return of .call or use Address.sendValue from OpenZeppelin.".into(),
+                description:
+                    "Low-level call return value is not checked; failed transfers go unnoticed."
+                        .into(),
+                recommendation:
+                    "Check the bool return of .call or use Address.sendValue from OpenZeppelin."
+                        .into(),
                 code_snippet: snippet(source, ".call{value"),
             });
             id_counter += 1;
@@ -249,8 +262,14 @@ pub fn analyze_solidity(source: &str) -> anyhow::Result<Vec<Finding>> {
     // Look for a .call pattern followed (anywhere later) by a storage assignment
     let has_external_call = source.contains(".call(") || source.contains(".call{value");
     let has_state_after = {
-        let call_pos = source.find(".call(").or_else(|| source.find(".call{value")).unwrap_or(usize::MAX);
-        let assign_pos = source[call_pos.min(source.len())..].find(" = ").map(|p| p + call_pos).unwrap_or(usize::MAX);
+        let call_pos = source
+            .find(".call(")
+            .or_else(|| source.find(".call{value"))
+            .unwrap_or(usize::MAX);
+        let assign_pos = source[call_pos.min(source.len())..]
+            .find(" = ")
+            .map(|p| p + call_pos)
+            .unwrap_or(usize::MAX);
         assign_pos < usize::MAX
     };
     if has_external_call && has_state_after {
@@ -259,8 +278,11 @@ pub fn analyze_solidity(source: &str) -> anyhow::Result<Vec<Finding>> {
             pattern: VulnerabilityPattern::Reentrancy,
             severity: SeverityLevel::Critical,
             line_number: None,
-            description: "External call detected before state change; classic reentrancy risk.".into(),
-            recommendation: "Apply the Checks-Effects-Interactions pattern and consider a ReentrancyGuard.".into(),
+            description: "External call detected before state change; classic reentrancy risk."
+                .into(),
+            recommendation:
+                "Apply the Checks-Effects-Interactions pattern and consider a ReentrancyGuard."
+                    .into(),
             code_snippet: None,
         });
     }
@@ -280,8 +302,11 @@ pub fn analyze_rust_contract(source: &str) -> anyhow::Result<Vec<Finding>> {
             pattern: VulnerabilityPattern::UncheckedReturn,
             severity: SeverityLevel::Medium,
             line_number: line_of(source, "unwrap()"),
-            description: "unwrap() will panic on error, causing a transaction abort and potential DoS.".into(),
-            recommendation: "Replace unwrap() with proper error propagation using ? or match.".into(),
+            description:
+                "unwrap() will panic on error, causing a transaction abort and potential DoS."
+                    .into(),
+            recommendation: "Replace unwrap() with proper error propagation using ? or match."
+                .into(),
             code_snippet: snippet(source, "unwrap()"),
         });
         id_counter += 1;
@@ -299,8 +324,10 @@ pub fn analyze_rust_contract(source: &str) -> anyhow::Result<Vec<Finding>> {
             pattern: VulnerabilityPattern::AccessControl,
             severity: SeverityLevel::High,
             line_number: None,
-            description: "No authority or access-control constraint detected in instruction handler.".into(),
-            recommendation: "Add Anchor constraints (has_one, constraint) or explicit signer checks.".into(),
+            description:
+                "No authority or access-control constraint detected in instruction handler.".into(),
+            recommendation:
+                "Add Anchor constraints (has_one, constraint) or explicit signer checks.".into(),
             code_snippet: None,
         });
     }
@@ -334,14 +361,17 @@ pub fn analyze_move_contract(source: &str) -> anyhow::Result<Vec<Finding>> {
 
 /// Compute a code quality score from 100.0 by deducting points per finding severity.
 pub fn compute_quality_score(findings: &[Finding]) -> f64 {
-    let deduction: f64 = findings.iter().map(|f| match f.severity {
-        SeverityLevel::Critical => 20.0,
-        SeverityLevel::High => 10.0,
-        SeverityLevel::Medium => 5.0,
-        SeverityLevel::Low => 2.0,
-        SeverityLevel::Informational => 0.5,
-        SeverityLevel::Gas => 0.0,
-    }).sum();
+    let deduction: f64 = findings
+        .iter()
+        .map(|f| match f.severity {
+            SeverityLevel::Critical => 20.0,
+            SeverityLevel::High => 10.0,
+            SeverityLevel::Medium => 5.0,
+            SeverityLevel::Low => 2.0,
+            SeverityLevel::Informational => 0.5,
+            SeverityLevel::Gas => 0.0,
+        })
+        .sum();
     (100.0_f64 - deduction).max(0.0)
 }
 
@@ -349,10 +379,17 @@ pub fn compute_quality_score(findings: &[Finding]) -> f64 {
 
 fn line_of(source: &str, pattern: &str) -> Option<u32> {
     source.lines().enumerate().find_map(|(i, line)| {
-        if line.contains(pattern) { Some(i as u32 + 1) } else { None }
+        if line.contains(pattern) {
+            Some(i as u32 + 1)
+        } else {
+            None
+        }
     })
 }
 
 fn snippet(source: &str, pattern: &str) -> Option<String> {
-    source.lines().find(|l| l.contains(pattern)).map(|l| l.trim().to_string())
+    source
+        .lines()
+        .find(|l| l.contains(pattern))
+        .map(|l| l.trim().to_string())
 }

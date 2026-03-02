@@ -82,7 +82,10 @@ pub fn analyze_zk_circuit(circuit_info: &ZkCircuitInfo) -> ZkAuditResult {
     match circuit_info.system {
         ZkSystem::Groth16 => {
             if circuit_info.has_trusted_setup {
-                findings.push("Groth16 requires a per-circuit trusted setup; verify ceremony integrity.".into());
+                findings.push(
+                    "Groth16 requires a per-circuit trusted setup; verify ceremony integrity."
+                        .into(),
+                );
             }
         }
         ZkSystem::Stark => {
@@ -91,12 +94,14 @@ pub fn analyze_zk_circuit(circuit_info: &ZkCircuitInfo) -> ZkAuditResult {
         ZkSystem::Halo2 => {
             if circuit_info.constraint_count > 0 && circuit_info.input_count == 0 {
                 vulnerabilities.push(ZkVulnerability::MissingRangeCheck);
-                findings.push("Halo2 circuit has no public inputs; range checks may be absent.".into());
+                findings
+                    .push("Halo2 circuit has no public inputs; range checks may be absent.".into());
             }
         }
         ZkSystem::Bulletproofs => {
             if circuit_info.constraint_count > 1_000_000 {
-                findings.push("Bulletproofs verification is O(n); large circuits will be slow.".into());
+                findings
+                    .push("Bulletproofs verification is O(n); large circuits will be slow.".into());
             }
         }
         _ => {}

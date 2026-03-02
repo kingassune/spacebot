@@ -49,17 +49,25 @@ pub struct VulnerabilityPattern {
     pub detection_regex: String,
 }
 
-pub fn generate_skill_from_pattern(vuln_pattern: &VulnerabilityPattern) -> anyhow::Result<SkillTemplate> {
+pub fn generate_skill_from_pattern(
+    vuln_pattern: &VulnerabilityPattern,
+) -> anyhow::Result<SkillTemplate> {
     let mut metadata = HashMap::new();
     metadata.insert("pattern_id".to_string(), vuln_pattern.id.clone());
     metadata.insert(
         "affected_languages".to_string(),
         vuln_pattern.affected_languages.join(", "),
     );
-    metadata.insert("detection_regex".to_string(), vuln_pattern.detection_regex.clone());
+    metadata.insert(
+        "detection_regex".to_string(),
+        vuln_pattern.detection_regex.clone(),
+    );
 
     let template = SkillTemplate {
-        name: format!("detect-{}", vuln_pattern.id.to_lowercase().replace(' ', "-")),
+        name: format!(
+            "detect-{}",
+            vuln_pattern.id.to_lowercase().replace(' ', "-")
+        ),
         description: format!(
             "Detects {} vulnerability: {}",
             vuln_pattern.name, vuln_pattern.description
@@ -79,7 +87,9 @@ pub fn generate_skill_from_pattern(vuln_pattern: &VulnerabilityPattern) -> anyho
     Ok(template)
 }
 
-pub fn generate_skill_from_threat_intel(intel: &ThreatIntelReport) -> anyhow::Result<SkillTemplate> {
+pub fn generate_skill_from_threat_intel(
+    intel: &ThreatIntelReport,
+) -> anyhow::Result<SkillTemplate> {
     let mut metadata = HashMap::new();
     metadata.insert("confidence".to_string(), intel.confidence.to_string());
     if let Some(actor) = &intel.threat_actor {
@@ -102,10 +112,7 @@ pub fn generate_skill_from_threat_intel(intel: &ThreatIntelReport) -> anyhow::Re
     ];
 
     let template = SkillTemplate {
-        name: format!(
-            "detect-{}",
-            intel.title.to_lowercase().replace(' ', "-")
-        ),
+        name: format!("detect-{}", intel.title.to_lowercase().replace(' ', "-")),
         description: format!("Detection skill derived from threat intel: {}", intel.title),
         triggers,
         workflow_steps,
