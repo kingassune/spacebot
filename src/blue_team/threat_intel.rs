@@ -1,0 +1,159 @@
+//! Threat intelligence feed management, IOC enrichment, and correlation for blue team operations.
+
+use anyhow::Result;
+use chrono::Utc;
+use std::collections::HashMap;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum IntelFeed {
+    Misp,
+    Otx,
+    AbuseCh,
+    VirusTotal,
+    ThreatConnect,
+    Mandiant,
+    OpenPhish,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum StixObjectType {
+    Indicator,
+    ThreatActor,
+    Campaign,
+    Malware,
+    AttackPattern,
+    Tool,
+    CourseOfAction,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum IocType {
+    IpAddress,
+    Domain,
+    Url,
+    FileHash,
+    Email,
+    Certificate,
+}
+
+impl std::fmt::Display for IocType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            IocType::IpAddress => "ip-address",
+            IocType::Domain => "domain",
+            IocType::Url => "url",
+            IocType::FileHash => "file-hash",
+            IocType::Email => "email",
+            IocType::Certificate => "certificate",
+        };
+        write!(f, "{s}")
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Ioc {
+    pub value: String,
+    pub ioc_type: IocType,
+    pub confidence: u8,
+    pub source: String,
+    pub tags: Vec<String>,
+    pub first_seen: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ThreatActor {
+    pub name: String,
+    pub aliases: Vec<String>,
+    pub motivation: String,
+    pub sophistication: String,
+    pub country: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ThreatIntelReport {
+    pub actor: Option<ThreatActor>,
+    pub iocs: Vec<Ioc>,
+    pub ttps: Vec<String>,
+    pub confidence: u8,
+    pub report_date: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ThreatIntelConfig {
+    pub feeds: Vec<IntelFeed>,
+    pub api_keys: HashMap<String, String>,
+    pub cache_dir: String,
+}
+
+pub async fn fetch_intel(config: &ThreatIntelConfig) -> Result<Vec<ThreatIntelReport>> {
+    // Real implementation would query configured feeds using api_keys.
+    let _ = config;
+    Ok(vec![])
+}
+
+pub fn enrich_ioc(ioc: &mut Ioc, reports: &[ThreatIntelReport]) {
+    for report in reports {
+        let matches = report
+            .iocs
+            .iter()
+            .any(|r| r.value == ioc.value && r.ioc_type == ioc.ioc_type);
+        if matches {
+            for tag in &report.ttps {
+                if !ioc.tags.contains(tag) {
+                    ioc.tags.push(tag.clone());
+                }
+            }
+            if let Some(actor) = &report.actor {
+                let actor_tag = format!("actor:{}", actor.name);
+                if !ioc.tags.contains(&actor_tag) {
+                    ioc.tags.push(actor_tag);
+                }
+            }
+        }
+    }
+}
+
+pub fn correlate_iocs(iocs: &[Ioc]) -> Vec<Vec<Ioc>> {
+    // Group IOCs by type as a basic correlation strategy.
+    let mut groups: HashMap<String, Vec<Ioc>> = HashMap::new();
+    for ioc in iocs {
+        let key = ioc.ioc_type.to_string();
+        groups.entry(key).or_default().push(ioc.clone());
+    }
+    groups.into_values().filter(|g| !g.is_empty()).collect()
+}
+
+pub fn score_ioc(ioc: &Ioc) -> u8 {
+    ioc.confidence
+}
+
+impl Ioc {
+    pub fn new(value: &str, ioc_type: IocType, source: &str) -> Self {
+        Self {
+            value: value.to_string(),
+            ioc_type,
+            confidence: 50,
+            source: source.to_string(),
+            tags: Vec::new(),
+            first_seen: Some(Utc::now()),
+        }
+    }
+}
+
+impl ThreatIntelReport {
+    pub fn new() -> Self {
+        Self {
+            actor: None,
+            iocs: Vec::new(),
+            ttps: Vec::new(),
+            confidence: 0,
+            report_date: Utc::now(),
+        }
+    }
+}
+
+impl Default for ThreatIntelReport {
+    fn default() -> Self {
+        Self::new()
+    }
+}
