@@ -79,6 +79,9 @@ enum SecurityCommand {
     /// Meta-agent self-extension and orchestration
     #[command(subcommand)]
     Meta(MetaCommand),
+    /// Integration pipeline and orchestration workflows
+    #[command(subcommand)]
+    Integration(IntegrationCommand),
     /// Run a cross-domain engagement from a TOML definition file
     Orchestrate {
         /// Path to engagement definition TOML file
@@ -217,6 +220,33 @@ enum MetaCommand {
     Orchestrate {
         /// Operation type (purple, full-spectrum, incident-sim)
         operation: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum IntegrationCommand {
+    /// Execute a full security pipeline engagement
+    RunPipeline {
+        /// Target description
+        target: String,
+        /// Operator name
+        #[arg(short, long, default_value = "james")]
+        operator: String,
+    },
+    /// Run a purple team assessment
+    PurpleTeam {
+        /// Target description
+        target: String,
+        /// Comma-separated ATT&CK technique IDs to test (e.g. T1059.001,T1566.001)
+        #[arg(short, long, default_value = "T1059.001,T1566.001")]
+        techniques: String,
+    },
+    /// Manage adversary campaigns
+    Campaign {
+        /// Campaign name
+        name: String,
+        /// Target organization
+        target: String,
     },
 }
 
@@ -3122,6 +3152,59 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             MetaCommand::Orchestrate { operation } => {
                 println!("Orchestrating {operation} operation");
                 println!("Use 'james start' and ask James to orchestrate a {operation} operation");
+            }
+        },
+        SecurityCommand::Integration(integration_cmd) => match integration_cmd {
+            IntegrationCommand::RunPipeline { target, operator } => {
+                use james::integration::{PipelineConfig, SecurityPipeline};
+                let config = PipelineConfig {
+                    target: target.clone(),
+                    operator: operator.clone(),
+                    ..Default::default()
+                };
+                let pipeline = SecurityPipeline::new("pipeline-001");
+                let rt = tokio::runtime::Runtime::new()?;
+                let result = rt.block_on(pipeline.run_full_engagement(&config))?;
+                println!("Pipeline complete: {}", result.executive_summary);
+                println!("Stages run: {}", result.stage_results.len());
+                println!("Total findings: {}", result.total_findings);
+            }
+            IntegrationCommand::PurpleTeam { target, techniques } => {
+                use james::integration::{PurpleTeamConfig, PurpleTeamRunner};
+                let technique_list: Vec<String> = techniques
+                    .split(',')
+                    .map(|t| t.trim().to_string())
+                    .collect();
+                let config = PurpleTeamConfig {
+                    target: target.clone(),
+                    attack_techniques: technique_list,
+                    ..Default::default()
+                };
+                let runner = PurpleTeamRunner::new("purple-001");
+                let rt = tokio::runtime::Runtime::new()?;
+                let result = rt.block_on(runner.run(&config))?;
+                println!(
+                    "Purple team complete. Detection coverage: {:.1}%",
+                    result.detection_coverage_pct
+                );
+                println!("Gaps identified: {}", result.gaps.len());
+                println!("{}", result.gap_analysis_report);
+            }
+            IntegrationCommand::Campaign { name, target } => {
+                use james::integration::{Campaign, CampaignConfig};
+                let config = CampaignConfig {
+                    name: name.clone(),
+                    target: target.clone(),
+                    ..Default::default()
+                };
+                let campaign = Campaign::new(config);
+                let result = campaign.finalize();
+                println!(
+                    "Campaign '{}' initialized against '{}'",
+                    result.campaign_name, result.target
+                );
+                println!("State: {:?}", result.state);
+                println!("Phases planned: {}", result.phase_results.len());
             }
         },
         SecurityCommand::Orchestrate { engagement_file } => {
