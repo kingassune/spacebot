@@ -2,6 +2,83 @@
 
 use std::collections::HashMap;
 
+/// Security domain for skill generation targeting.
+#[derive(Debug, Clone, PartialEq)]
+pub enum SecurityDomain {
+    Pentest,
+    RedTeam,
+    BlueTeam,
+    Blockchain,
+    ExploitDev,
+    ThreatIntel,
+    Generic,
+}
+
+/// A skill generated from a task description and domain context.
+#[derive(Debug, Clone)]
+pub struct GeneratedSkill {
+    pub name: String,
+    pub domain: SecurityDomain,
+    pub description: String,
+    pub markdown: String,
+}
+
+/// Generates SKILL.md files from task descriptions and domain context.
+#[derive(Debug, Clone)]
+pub struct SkillGenerator {
+    pub default_domain: SecurityDomain,
+}
+
+impl SkillGenerator {
+    pub fn new(default_domain: SecurityDomain) -> Self {
+        Self { default_domain }
+    }
+
+    /// Analyze a task description and generate a SKILL.md for the given domain.
+    pub fn generate_skill(&self, task: &str, domain: SecurityDomain) -> GeneratedSkill {
+        let sanitised = task.to_lowercase().replace(' ', "-");
+        let name = format!("{}-{}", domain_prefix(&domain), sanitised);
+        let description = format!("Skill for: {task}");
+        let markdown = build_skill_markdown(&name, &description, &domain, task);
+        GeneratedSkill {
+            name,
+            domain,
+            description,
+            markdown,
+        }
+    }
+}
+
+impl Default for SkillGenerator {
+    fn default() -> Self {
+        Self::new(SecurityDomain::Generic)
+    }
+}
+
+fn domain_prefix(domain: &SecurityDomain) -> &'static str {
+    match domain {
+        SecurityDomain::Pentest => "pentest",
+        SecurityDomain::RedTeam => "redteam",
+        SecurityDomain::BlueTeam => "blueteam",
+        SecurityDomain::Blockchain => "blockchain",
+        SecurityDomain::ExploitDev => "exploit",
+        SecurityDomain::ThreatIntel => "intel",
+        SecurityDomain::Generic => "skill",
+    }
+}
+
+fn build_skill_markdown(
+    name: &str,
+    description: &str,
+    domain: &SecurityDomain,
+    task: &str,
+) -> String {
+    let domain_label = format!("{domain:?}");
+    format!(
+        "---\nname: {name}\ndescription: {description}\n---\n\n# {name}\n\n**Domain**: {domain_label}\n\n## Task\n\n{task}\n\n## Steps\n\n1. Analyze the target\n2. Execute domain-specific checks\n3. Report findings with severity ratings\n4. Recommend mitigations\n"
+    )
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum SkillType {
     Detection,

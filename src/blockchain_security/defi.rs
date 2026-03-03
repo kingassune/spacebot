@@ -123,7 +123,7 @@ pub fn detect_flash_loan_vulnerability(contract: &str) -> anyhow::Result<Vec<Fla
     Ok(risks)
 }
 
-/// Analyse contract source for oracle dependency and price-feed risk.
+/// Analyze contract source for oracle dependency and price-feed risk.
 pub fn analyze_oracle_dependency(contract: &str) -> anyhow::Result<OracleRiskAssessment> {
     let uses_chainlink =
         contract.contains("AggregatorV3Interface") || contract.contains("latestRoundData");
@@ -217,4 +217,188 @@ pub fn analyze_liquidity_pool(pool_address: &str) -> anyhow::Result<LiquidityPoo
         imbalance_ratio: 1.0,
         impermanent_loss_percent: 0.0,
     })
+}
+
+// ── Governance Attack Analysis ─────────────────────────────────────────────
+
+/// Type of governance attack vector.
+#[derive(Debug, Clone, PartialEq)]
+pub enum GovernanceAttackVector {
+    VoteBuying,
+    FlashLoanGovernance,
+    TimelockBypass,
+    QuorumManipulation,
+    DelegateFront,
+}
+
+/// Analysis of governance mechanism vulnerabilities.
+#[derive(Debug, Clone)]
+pub struct GovernanceAttack {
+    pub protocol: String,
+    pub vectors: Vec<GovernanceAttackVector>,
+    pub quorum_percent: f64,
+    pub timelock_delay_secs: u64,
+    pub findings: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+/// Analyze a governance contract source for known attack vectors.
+pub fn analyze_governance(source: &str, protocol: &str) -> anyhow::Result<GovernanceAttack> {
+    let mut vectors = Vec::new();
+    let mut findings = Vec::new();
+    let mut recommendations = Vec::new();
+
+    // Flash loan governance attack: token snapshot without time delay
+    if source.contains("token.balanceOf(")
+        && !source.contains("snapshot")
+        && !source.contains("getPriorVotes")
+    {
+        vectors.push(GovernanceAttackVector::FlashLoanGovernance);
+        findings.push("Voting power read from live balance; flash loan attack possible.".into());
+        recommendations.push("Use snapshotted or time-locked voting power (e.g. ERC20Snapshot or Compound's getPriorVotes).".into());
+    }
+
+    // Timelock bypass: very short delay
+    if (source.contains("delay = ") || source.contains("TIMELOCK_DELAY"))
+        && !source.contains("require(delay >= ")
+    {
+        vectors.push(GovernanceAttackVector::TimelockBypass);
+        findings
+            .push("Timelock delay is not enforced with a minimum; bypass may be possible.".into());
+        recommendations.push("Require a minimum timelock delay (e.g. 48 hours).".into());
+    }
+
+    // Vote buying: off-chain delegation without revocation
+    if source.contains("delegate(") && !source.contains("revokeDelegate") {
+        vectors.push(GovernanceAttackVector::VoteBuying);
+        findings.push("Delegation without revocation mechanism detected; vote buying risk.".into());
+        recommendations
+            .push("Implement delegation revocation and consider vote-lock mechanisms.".into());
+    }
+
+    Ok(GovernanceAttack {
+        protocol: protocol.to_string(),
+        vectors,
+        quorum_percent: 4.0,
+        timelock_delay_secs: 172800,
+        findings,
+        recommendations,
+    })
+}
+
+// ── Lending Protocol Analysis ──────────────────────────────────────────────
+
+/// Lending market analysis with liquidation manipulation detection.
+#[derive(Debug, Clone)]
+pub struct LendingProtocolAnalysis {
+    pub protocol: String,
+    pub liquidation_threshold: f64,
+    pub liquidation_penalty: f64,
+    pub oracle_dependency: String,
+    pub manipulation_risks: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+/// Analyze a lending protocol source for liquidation and oracle manipulation.
+pub fn analyze_lending_protocol(
+    source: &str,
+    protocol: &str,
+) -> anyhow::Result<LendingProtocolAnalysis> {
+    let mut manipulation_risks = Vec::new();
+    let mut recommendations = Vec::new();
+
+    if !source.contains("TWAP") && !source.contains("twap") && source.contains("getPrice") {
+        manipulation_risks.push("Spot price oracle used; flash loan manipulation possible.".into());
+        recommendations.push("Replace spot price with TWAP oracle.".into());
+    }
+
+    if source.contains("liquidate") && !source.contains("maxLiquidation") {
+        manipulation_risks.push("Unbounded liquidation amount; dust attack risk.".into());
+        recommendations
+            .push("Cap maximum liquidation per call to prevent market-impact manipulation.".into());
+    }
+
+    Ok(LendingProtocolAnalysis {
+        protocol: protocol.to_string(),
+        liquidation_threshold: 0.80,
+        liquidation_penalty: 0.05,
+        oracle_dependency: if source.contains("AggregatorV3Interface") {
+            "Chainlink".into()
+        } else {
+            "Custom".into()
+        },
+        manipulation_risks,
+        recommendations,
+    })
+}
+
+// ── AMM Invariant Checker ──────────────────────────────────────────────────
+
+/// AMM invariant type.
+#[derive(Debug, Clone, PartialEq)]
+pub enum AmmInvariant {
+    ConstantProduct,
+    ConstantSum,
+    StableSwap,
+    WeightedProduct,
+}
+
+/// Result of an AMM invariant verification.
+#[derive(Debug, Clone)]
+pub struct AmmInvariantResult {
+    pub invariant: AmmInvariant,
+    pub invariant_holds: bool,
+    pub deviation_percent: f64,
+    pub findings: Vec<String>,
+}
+
+/// Verify that an AMM's price formula matches the expected invariant.
+pub struct AmmInvariantChecker;
+
+impl AmmInvariantChecker {
+    /// Check constant-product invariant: k = x * y must be non-decreasing.
+    pub fn check_constant_product(
+        reserve_x: f64,
+        reserve_y: f64,
+        k_before: f64,
+    ) -> AmmInvariantResult {
+        let k_after = reserve_x * reserve_y;
+        let deviation = ((k_after - k_before) / k_before.max(f64::EPSILON)).abs();
+        let invariant_holds = k_after >= k_before * (1.0 - 1e-6);
+        let mut findings = Vec::new();
+        if !invariant_holds {
+            findings.push(format!(
+                "k decreased from {k_before:.6} to {k_after:.6} ({deviation:.4}% deviation); invariant violated."
+            ));
+        }
+        AmmInvariantResult {
+            invariant: AmmInvariant::ConstantProduct,
+            invariant_holds,
+            deviation_percent: deviation * 100.0,
+            findings,
+        }
+    }
+
+    /// Check constant-sum invariant: x + y must be non-decreasing.
+    pub fn check_constant_sum(
+        reserve_x: f64,
+        reserve_y: f64,
+        sum_before: f64,
+    ) -> AmmInvariantResult {
+        let sum_after = reserve_x + reserve_y;
+        let deviation = ((sum_after - sum_before) / sum_before.max(f64::EPSILON)).abs();
+        let invariant_holds = sum_after >= sum_before * (1.0 - 1e-6);
+        let mut findings = Vec::new();
+        if !invariant_holds {
+            findings.push(format!(
+                "sum decreased from {sum_before:.6} to {sum_after:.6}; constant-sum invariant violated."
+            ));
+        }
+        AmmInvariantResult {
+            invariant: AmmInvariant::ConstantSum,
+            invariant_holds,
+            deviation_percent: deviation * 100.0,
+            findings,
+        }
+    }
 }

@@ -79,6 +79,11 @@ enum SecurityCommand {
     /// Meta-agent self-extension and orchestration
     #[command(subcommand)]
     Meta(MetaCommand),
+    /// Run a cross-domain engagement from a TOML definition file
+    Orchestrate {
+        /// Path to engagement definition TOML file
+        engagement_file: std::path::PathBuf,
+    },
 }
 
 #[derive(Subcommand)]
@@ -181,6 +186,8 @@ enum MetaCommand {
     },
     /// Analyze capability gaps
     AnalyzeGaps,
+    /// Run capability analysis and print a report
+    Analyze,
     /// Improve an existing skill
     Improve {
         /// Skill name
@@ -190,6 +197,21 @@ enum MetaCommand {
     BuildPlugin {
         /// Threat intel description
         intel: String,
+    },
+    /// Generate a new skill for a security domain
+    GenerateSkill {
+        /// Security domain (pentest, red-team, blue-team, blockchain, exploit, intel)
+        domain: String,
+        /// Skill description
+        description: String,
+    },
+    /// Scaffold a new James plugin directory
+    BuildPluginScaffold {
+        /// Plugin name
+        name: String,
+        /// Security domain
+        #[arg(short, long)]
+        domain: String,
     },
     /// Orchestrate a cross-domain security operation
     Orchestrate {
@@ -2917,6 +2939,19 @@ async fn initialize_agents(
     Ok(())
 }
 
+fn parse_security_domain(domain: &str) -> james::meta_agent::SecurityDomain {
+    use james::meta_agent::SecurityDomain;
+    match domain.to_lowercase().as_str() {
+        "pentest" | "pen-test" => SecurityDomain::Pentest,
+        "red-team" | "redteam" | "red_team" => SecurityDomain::RedTeam,
+        "blue-team" | "blueteam" | "blue_team" => SecurityDomain::BlueTeam,
+        "blockchain" | "smart-contract" | "defi" => SecurityDomain::Blockchain,
+        "exploit" | "exploit-dev" | "exploitdev" => SecurityDomain::ExploitDev,
+        "intel" | "threat-intel" | "threatintel" => SecurityDomain::ThreatIntel,
+        _ => SecurityDomain::Generic,
+    }
+}
+
 fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
     match security_cmd {
         SecurityCommand::RedTeam(red_team_cmd) => match red_team_cmd {
@@ -3008,6 +3043,36 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 println!("Analyzing capability gaps...");
                 println!("Use 'james start' and ask James to analyze capability gaps");
             }
+            MetaCommand::Analyze => {
+                use james::meta_agent::capability_analysis::build_initial_capability_map;
+                use james::meta_agent::{CapabilityAnalyzer, EngagementType};
+                let map = build_initial_capability_map();
+                let analyzer = CapabilityAnalyzer::new(map);
+                for engagement in &[
+                    EngagementType::Pentest,
+                    EngagementType::RedTeamOp,
+                    EngagementType::BlueTeamDefense,
+                    EngagementType::BlockchainAudit,
+                ] {
+                    let report = analyzer.analyze_capabilities(engagement);
+                    println!("=== {:?} ===", report.engagement);
+                    println!("  Coverage: {:.1}%", report.coverage_percent);
+                    println!("  Covered:  {}", report.covered_areas.join(", "));
+                    if !report.gaps.is_empty() {
+                        println!("  Gaps:");
+                        for gap in &report.gaps {
+                            println!("    - {}: {}", gap.domain, gap.missing_capability);
+                        }
+                    }
+                    if !report.recommendations.is_empty() {
+                        println!("  Recommendations:");
+                        for rec in &report.recommendations {
+                            println!("    * {rec}");
+                        }
+                    }
+                    println!();
+                }
+            }
             MetaCommand::Improve { skill } => {
                 println!("Improving skill: {skill}");
                 println!("Use 'james start' and ask James to improve the skill: {skill}");
@@ -3016,11 +3081,113 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 println!("Building detection plugin from: {intel}");
                 println!("Use 'james start' and ask James to build a plugin from: {intel}");
             }
+            MetaCommand::GenerateSkill {
+                domain,
+                description,
+            } => {
+                use james::meta_agent::SkillGenerator;
+                let sec_domain = parse_security_domain(&domain);
+                let generator = SkillGenerator::new(sec_domain.clone());
+                let skill = generator.generate_skill(&description, sec_domain);
+                println!("Generated skill: {}", skill.name);
+                println!("Domain: {:?}", skill.domain);
+                println!("Description: {}", skill.description);
+                println!();
+                println!("{}", skill.markdown);
+            }
+            MetaCommand::BuildPluginScaffold { name, domain } => {
+                use james::meta_agent::{PluginBuilder, PluginConfig};
+                let builder = PluginBuilder::new("plugins");
+                let config = PluginConfig {
+                    name: name.clone(),
+                    domain: domain.clone(),
+                    description: format!("James security plugin for {domain}"),
+                    version: "0.1.0".to_string(),
+                    include_hooks: true,
+                    include_commands: true,
+                };
+                match builder.build_plugin(&config) {
+                    Ok(manifest) => {
+                        println!("Plugin scaffolded: {}", manifest.name);
+                        println!("Version: {}", manifest.version);
+                        println!("Capabilities: {}", manifest.capabilities.join(", "));
+                        println!("Entry point: {}", manifest.entry_point);
+                    }
+                    Err(error) => {
+                        eprintln!("Failed to scaffold plugin: {error}");
+                        std::process::exit(1);
+                    }
+                }
+            }
             MetaCommand::Orchestrate { operation } => {
                 println!("Orchestrating {operation} operation");
                 println!("Use 'james start' and ask James to orchestrate a {operation} operation");
             }
         },
+        SecurityCommand::Orchestrate { engagement_file } => {
+            println!(
+                "Loading engagement definition: {}",
+                engagement_file.display()
+            );
+            if !engagement_file.exists() {
+                eprintln!("Engagement file not found: {}", engagement_file.display());
+                std::process::exit(1);
+            }
+            let content = std::fs::read_to_string(&engagement_file)?;
+            let value: toml::Value = toml::from_str(&content)
+                .map_err(|e| anyhow::anyhow!("failed to parse engagement TOML: {e}"))?;
+
+            let name = value
+                .get("name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("unnamed");
+            let domains: Vec<String> = value
+                .get("domains")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let objectives: Vec<String> = value
+                .get("objectives")
+                .and_then(|v| v.as_array())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|v| v.as_str().map(String::from))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let duration_days = value
+                .get("duration_days")
+                .and_then(|v| v.as_integer())
+                .unwrap_or(5) as u32;
+
+            use james::meta_agent::{CrossDomainCoordinator, EngagementScope};
+            let scope = EngagementScope {
+                name: name.to_string(),
+                domains,
+                objectives,
+                target_systems: Vec::new(),
+                duration_days,
+            };
+            let coordinator = CrossDomainCoordinator::new();
+            let plan = coordinator.plan_engagement(&scope);
+            println!("Engagement plan: {}", plan.name);
+            println!("Sub-tasks ({}):", plan.sub_tasks.len());
+            for task in &plan.sub_tasks {
+                println!(
+                    "  [{}] {} — {} days",
+                    task.id, task.description, task.estimated_days
+                );
+            }
+            println!();
+            println!("Domain assignments:");
+            for (domain, engine) in &plan.domain_assignments {
+                println!("  {domain} -> {engine}");
+            }
+        }
     }
     Ok(())
 }
