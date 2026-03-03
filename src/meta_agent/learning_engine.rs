@@ -136,11 +136,7 @@ impl LearningEngine {
     /// Generate a lessons-learned report from engagement history.
     pub fn generate_lessons_learned(&self) -> String {
         let total = self.engagement_history.len();
-        let successful = self
-            .engagement_history
-            .iter()
-            .filter(|r| r.success)
-            .count();
+        let successful = self.engagement_history.iter().filter(|r| r.success).count();
         let techniques_tracked = self.technique_effectiveness.len();
 
         let top_techniques: Vec<String> = self
@@ -197,7 +193,11 @@ impl LearningEngine {
                 correlation.detection_rate =
                     correlation.detection_count as f64 / correlation.usage_count as f64;
             } else {
-                let detected = if result.detections_triggered > 0 { 1 } else { 0 };
+                let detected = if result.detections_triggered > 0 {
+                    1
+                } else {
+                    0
+                };
                 self.detection_correlations.push(DetectionCorrelation {
                     technique: technique.clone(),
                     detection_count: detected,

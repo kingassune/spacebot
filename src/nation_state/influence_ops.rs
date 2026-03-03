@@ -131,8 +131,7 @@ impl InfluenceOperation {
     pub fn plan_influence_operation(&self) -> String {
         let technique_list: Vec<String> =
             self.techniques.iter().map(|t| format!("{t:?}")).collect();
-        let platform_list: Vec<String> =
-            self.platforms.iter().map(|p| format!("{p:?}")).collect();
+        let platform_list: Vec<String> = self.platforms.iter().map(|p| format!("{p:?}")).collect();
 
         format!(
             "Influence Operation: {}\nTarget Audience: {}\nNarrative: {}\nPlatforms: {}\nTechniques: {}",
@@ -146,8 +145,7 @@ impl InfluenceOperation {
 
     /// Model how the narrative spreads across target platforms.
     pub fn model_narrative_spread(&self) -> NarrativeSpreadModel {
-        let base_reach = self.amplification_strategy.bot_count * 50
-            * self.platforms.len() as u64;
+        let base_reach = self.amplification_strategy.bot_count * 50 * self.platforms.len() as u64;
         let multiplied_reach =
             (base_reach as f64 * self.amplification_strategy.organic_reach_multiplier) as u64;
 
@@ -157,7 +155,9 @@ impl InfluenceOperation {
             0.08
         };
 
-        let has_deepfake = self.techniques.contains(&InfluenceTechnique::DeepfakeGeneration);
+        let has_deepfake = self
+            .techniques
+            .contains(&InfluenceTechnique::DeepfakeGeneration);
         let share_rate = if has_deepfake { 0.12 } else { 0.06 };
 
         let peak_hours = match self.platforms.first() {
@@ -214,7 +214,10 @@ impl InfluenceOperation {
             "Increase digital media literacy awareness campaigns.".to_string(),
         ];
 
-        if self.techniques.contains(&InfluenceTechnique::DeepfakeGeneration) {
+        if self
+            .techniques
+            .contains(&InfluenceTechnique::DeepfakeGeneration)
+        {
             measures.push(
                 "Deploy AI deepfake detection tools for video content verification.".to_string(),
             );
@@ -222,13 +225,15 @@ impl InfluenceOperation {
 
         if self.techniques.contains(&InfluenceTechnique::BotNetworks) {
             measures.push(
-                "Use graph-based CIB detection to identify coordinated inauthentic networks.".to_string(),
+                "Use graph-based CIB detection to identify coordinated inauthentic networks."
+                    .to_string(),
             );
         }
 
         if self.techniques.contains(&InfluenceTechnique::HackAndLeak) {
             measures.push(
-                "Pre-brief media on potential hack-and-leak operations targeting key personnel.".to_string(),
+                "Pre-brief media on potential hack-and-leak operations targeting key personnel."
+                    .to_string(),
             );
         }
 

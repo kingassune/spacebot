@@ -198,9 +198,7 @@ impl GovernanceAnalyzer {
             "LOW — voting power appears reasonably distributed"
         };
 
-        format!(
-            "Voting power concentration: top holder holds {top_holder_pct:.1}% — Risk: {risk}"
-        )
+        format!("Voting power concentration: top holder holds {top_holder_pct:.1}% — Risk: {risk}")
     }
 
     /// Generate a comprehensive governance security report.
@@ -209,12 +207,7 @@ impl GovernanceAnalyzer {
         let surface_text: Vec<String> = analysis
             .attack_surface
             .iter()
-            .map(|s| {
-                format!(
-                    "  [{:?}] {}: {}",
-                    s.attack_type, s.severity, s.description
-                )
-            })
+            .map(|s| format!("  [{:?}] {}: {}", s.attack_type, s.severity, s.description))
             .collect();
         let rec_text: Vec<String> = analysis
             .recommendations
@@ -250,9 +243,10 @@ impl GovernanceAnalyzer {
             surfaces.push(GovernanceAttackSurface {
                 attack_type: GovernanceAttack::FlashLoanVoting,
                 severity: "Critical".to_string(),
-                description: "Token-weighted voting is vulnerable to flash-loan governance attacks \
+                description:
+                    "Token-weighted voting is vulnerable to flash-loan governance attacks \
                               if snapshot is taken at vote time."
-                    .to_string(),
+                        .to_string(),
             });
         }
 
@@ -267,7 +261,8 @@ impl GovernanceAnalyzer {
         surfaces.push(GovernanceAttackSurface {
             attack_type: GovernanceAttack::ProposalGriefing,
             severity: "Medium".to_string(),
-            description: "No minimum token threshold to submit proposals allows spam attacks.".to_string(),
+            description: "No minimum token threshold to submit proposals allows spam attacks."
+                .to_string(),
         });
 
         surfaces
@@ -297,10 +292,7 @@ impl GovernanceAnalyzer {
 
 /// Compute a governance health score (0.0–100.0) from attack surface findings.
 fn calculate_health_score(surfaces: &[GovernanceAttackSurface]) -> f64 {
-    let critical = surfaces
-        .iter()
-        .filter(|s| s.severity == "Critical")
-        .count();
+    let critical = surfaces.iter().filter(|s| s.severity == "Critical").count();
     let high = surfaces.iter().filter(|s| s.severity == "High").count();
 
     let deduction = (critical * 20 + high * 10) as f64;

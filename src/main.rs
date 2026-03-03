@@ -3111,7 +3111,14 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 };
                 let vulns = analyzer.analyze_mempool_vulnerability(&tx);
                 println!("MEV vulnerability analysis for: {tx_hash}");
-                println!("Potential attack types: {}", vulns.iter().map(|v| format!("{v:?}")).collect::<Vec<_>>().join(", "));
+                println!(
+                    "Potential attack types: {}",
+                    vulns
+                        .iter()
+                        .map(|v| format!("{v:?}"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
                 for rec in analyzer.recommend_mev_protections() {
                     println!("  • {rec}");
                 }
@@ -3260,10 +3267,17 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 let module = builder.generate_module(&spec);
                 println!("Generated module: {}", module.name);
                 println!("Category: {:?}", module.category);
-                println!("Quality gate: {}", if module.quality_passed { "PASSED" } else { "FAILED" });
+                println!(
+                    "Quality gate: {}",
+                    if module.quality_passed {
+                        "PASSED"
+                    } else {
+                        "FAILED"
+                    }
+                );
             }
             MetaCommand::Learn { engagement_id } => {
-                use james::meta_agent::{LearningEngine, LearningEngagementResult};
+                use james::meta_agent::{LearningEngagementResult, LearningEngine};
                 let mut engine = LearningEngine::new();
                 let result = LearningEngagementResult {
                     engagement_id: engagement_id.clone(),
@@ -3420,15 +3434,18 @@ fn cmd_nation_state(ns_cmd: NationStateCommand) -> anyhow::Result<()> {
 
 fn cmd_nation_state_inner(ns_cmd: NationStateCommand) {
     use james::nation_state::{
-        campaign::{CampaignObjective, NationStateCampaign},
         NationStateEngine,
+        campaign::{CampaignObjective, NationStateCampaign},
     };
     match ns_cmd {
         NationStateCommand::Campaign { name } => {
             let mut engine = NationStateEngine::new();
             let campaign = engine.create_campaign(
                 &name,
-                vec![CampaignObjective::Espionage, CampaignObjective::IntellectualPropertyTheft],
+                vec![
+                    CampaignObjective::Espionage,
+                    CampaignObjective::IntellectualPropertyTheft,
+                ],
                 90,
             );
             println!("{}", campaign.generate_campaign_report());
@@ -3440,8 +3457,12 @@ fn cmd_nation_state_inner(ns_cmd: NationStateCommand) {
             );
         }
         NationStateCommand::Emulate { apt_group } => {
-            let mut campaign =
-                NationStateCampaign::new("emulation-001", &apt_group, vec![CampaignObjective::Espionage], 30);
+            let mut campaign = NationStateCampaign::new(
+                "emulation-001",
+                &apt_group,
+                vec![CampaignObjective::Espionage],
+                30,
+            );
             campaign.plan_campaign();
             println!("APT emulation campaign planned for: {apt_group}");
             println!("{}", campaign.generate_campaign_report());

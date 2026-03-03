@@ -93,8 +93,8 @@ impl Tradecraft {
     /// Apply tradecraft rules, activating all rules appropriate for the current level.
     pub fn apply_tradecraft(&mut self) {
         for rule in &mut self.opsec_rules {
-            rule.enforced = opsec_level_rank(&self.opsec_level)
-                >= opsec_level_rank(&rule.minimum_level);
+            rule.enforced =
+                opsec_level_rank(&self.opsec_level) >= opsec_level_rank(&rule.minimum_level);
         }
     }
 
@@ -169,16 +169,14 @@ impl Tradecraft {
         }
 
         if self.cover_identities.is_empty() {
-            recommendations
-                .push("Register at least one documented cover identity.".to_string());
+            recommendations.push("Register at least one documented cover identity.".to_string());
         }
 
         if !self.communication_plan.require_encryption {
             recommendations.push("Enable end-to-end encryption on all comms channels.".to_string());
         }
 
-        let unenforced: Vec<&OpsecRule> =
-            self.opsec_rules.iter().filter(|r| !r.enforced).collect();
+        let unenforced: Vec<&OpsecRule> = self.opsec_rules.iter().filter(|r| !r.enforced).collect();
         for rule in unenforced.iter().take(3) {
             recommendations.push(format!("Enforce rule: {}", rule.description));
         }
@@ -231,7 +229,8 @@ fn default_rules_for_level(level: &OpsecLevel) -> Vec<OpsecRule> {
         },
         OpsecRule {
             id: "OR-005".to_string(),
-            description: "Use documented cover identities for all external interactions.".to_string(),
+            description: "Use documented cover identities for all external interactions."
+                .to_string(),
             minimum_level: OpsecLevel::Maximum,
             enforced: opsec_level_rank(level) >= 4,
         },

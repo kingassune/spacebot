@@ -8,7 +8,7 @@ pub enum IndustrialProtocol {
     /// DNP3 protocol for SCADA communications.
     DNP3,
     /// OPC Unified Architecture.
-    OPC_UA,
+    OpcUa,
     /// EtherNet/IP industrial Ethernet protocol.
     EthernetIP,
     /// BACnet building automation protocol.
@@ -98,10 +98,7 @@ pub struct CyberPhysicalAttack {
 
 impl CyberPhysicalAttack {
     /// Create a new cyber-physical attack scenario.
-    pub fn new(
-        protocol: IndustrialProtocol,
-        target_system: CriticalInfrastructure,
-    ) -> Self {
+    pub fn new(protocol: IndustrialProtocol, target_system: CriticalInfrastructure) -> Self {
         let impact_assessment = estimate_impact(&protocol, &target_system);
         Self {
             protocol,
@@ -132,7 +129,10 @@ impl CyberPhysicalAttack {
     /// Analyse simulated PLC firmware for known vulnerability patterns.
     pub fn analyze_plc_firmware(&self) -> Vec<String> {
         vec![
-            format!("Checking {:?} protocol implementation for known CVEs...", self.protocol),
+            format!(
+                "Checking {:?} protocol implementation for known CVEs...",
+                self.protocol
+            ),
             "Scanning for hardcoded credentials in firmware image...".to_string(),
             "Analysing memory layout for buffer overflow vectors...".to_string(),
             "Checking for unsigned firmware update validation...".to_string(),
@@ -181,11 +181,13 @@ impl CyberPhysicalAttack {
 
         match self.target_system {
             CriticalInfrastructure::PowerGrid => {
-                mitigations.push("Apply NERC CIP standards for bulk electric system assets.".to_string());
+                mitigations
+                    .push("Apply NERC CIP standards for bulk electric system assets.".to_string());
             }
             CriticalInfrastructure::WaterTreatment => {
-                mitigations
-                    .push("Apply AWIA 2018 requirements and manual override capabilities.".to_string());
+                mitigations.push(
+                    "Apply AWIA 2018 requirements and manual override capabilities.".to_string(),
+                );
             }
             CriticalInfrastructure::NuclearFacility => {
                 mitigations.push("Enforce air-gap isolation per NRC RG 5.71.".to_string());
@@ -206,9 +208,7 @@ fn estimate_impact(
         CriticalInfrastructure::PowerGrid => {
             (SafetyImpact::Severe, 500_000u64, 72u64, 50_000_000u64)
         }
-        CriticalInfrastructure::WaterTreatment => {
-            (SafetyImpact::Severe, 100_000, 96, 10_000_000)
-        }
+        CriticalInfrastructure::WaterTreatment => (SafetyImpact::Severe, 100_000, 96, 10_000_000),
         CriticalInfrastructure::NuclearFacility => {
             (SafetyImpact::Catastrophic, 1_000_000, 720, 1_000_000_000)
         }
@@ -218,12 +218,8 @@ fn estimate_impact(
         CriticalInfrastructure::TelecomNetwork => {
             (SafetyImpact::Moderate, 1_000_000, 24, 100_000_000)
         }
-        CriticalInfrastructure::FinancialSystem => {
-            (SafetyImpact::Minor, 5_000_000, 8, 500_000_000)
-        }
-        CriticalInfrastructure::HealthcareSystem => {
-            (SafetyImpact::Severe, 50_000, 168, 5_000_000)
-        }
+        CriticalInfrastructure::FinancialSystem => (SafetyImpact::Minor, 5_000_000, 8, 500_000_000),
+        CriticalInfrastructure::HealthcareSystem => (SafetyImpact::Severe, 50_000, 168, 5_000_000),
         CriticalInfrastructure::ManufacturingPlant => {
             (SafetyImpact::Moderate, 1_000, 72, 5_000_000)
         }

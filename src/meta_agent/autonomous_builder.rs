@@ -150,11 +150,7 @@ impl AutonomousBuilder {
                 module.name
             ));
         }
-        if !self
-            .generated_modules
-            .iter()
-            .any(|m| m.name == module.name)
-        {
+        if !self.generated_modules.iter().any(|m| m.name == module.name) {
             self.generated_modules.push(module);
         }
         Ok(())

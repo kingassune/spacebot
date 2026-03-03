@@ -149,7 +149,8 @@ impl SupplyChainAttack {
         ) {
             weak_links.push(WeakLink {
                 component: format!("{}/ci-pipeline", self.target_software),
-                reason: "CI pipeline executes untrusted PRs with write access to artifacts.".to_string(),
+                reason: "CI pipeline executes untrusted PRs with write access to artifacts."
+                    .to_string(),
                 exploitation_difficulty: 0.5,
             });
         }
@@ -157,7 +158,8 @@ impl SupplyChainAttack {
         if self.compromise_depth >= 2 {
             weak_links.push(WeakLink {
                 component: "shared-utils".to_string(),
-                reason: "Widely-used transitive dependency with high downstream blast radius.".to_string(),
+                reason: "Widely-used transitive dependency with high downstream blast radius."
+                    .to_string(),
                 exploitation_difficulty: 0.6,
             });
         }
@@ -172,7 +174,12 @@ impl SupplyChainAttack {
 
         let weak_link_text: Vec<String> = weak_links
             .iter()
-            .map(|wl| format!("  - {} (difficulty {:.1}): {}", wl.component, wl.exploitation_difficulty, wl.reason))
+            .map(|wl| {
+                format!(
+                    "  - {} (difficulty {:.1}): {}",
+                    wl.component, wl.exploitation_difficulty, wl.reason
+                )
+            })
             .collect();
 
         format!(
@@ -198,10 +205,7 @@ impl SupplyChainAttack {
 }
 
 /// Estimate detection difficulty based on vector and depth.
-fn estimate_detection_difficulty(
-    vector: &SupplyChainVector,
-    depth: u32,
-) -> DetectionDifficulty {
+fn estimate_detection_difficulty(vector: &SupplyChainVector, depth: u32) -> DetectionDifficulty {
     let base = match vector {
         SupplyChainVector::TypoSquatting => DetectionDifficulty::Low,
         SupplyChainVector::DependencyConfusion => DetectionDifficulty::Medium,

@@ -230,12 +230,14 @@ impl AttackInfrastructure {
             ));
         }
 
-        map.push_str(&format!(
-            "VPN Chain ({} hops):\n",
-            self.vpn_chain.len()
-        ));
+        map.push_str(&format!("VPN Chain ({} hops):\n", self.vpn_chain.len()));
         for (i, hop) in self.vpn_chain.iter().enumerate() {
-            map.push_str(&format!("  Hop {}: {} ({})\n", i + 1, hop.region, hop.provider));
+            map.push_str(&format!(
+                "  Hop {}: {} ({})\n",
+                i + 1,
+                hop.region,
+                hop.provider
+            ));
         }
 
         map.push_str(&format!(

@@ -138,11 +138,8 @@ impl NationStateCampaign {
 
     /// Generate a human-readable campaign report.
     pub fn generate_campaign_report(&self) -> String {
-        let objective_list: Vec<String> = self
-            .objectives
-            .iter()
-            .map(|o| format!("{o:?}"))
-            .collect();
+        let objective_list: Vec<String> =
+            self.objectives.iter().map(|o| format!("{o:?}")).collect();
         let phase_list: Vec<String> = self.phases.iter().map(|p| format!("{p:?}")).collect();
 
         format!(

@@ -110,7 +110,11 @@ impl MevAnalyzer {
     /// Simulate a sandwich attack on the given transaction.
     ///
     /// Returns the estimated profit in ETH for the sandwich attacker.
-    pub fn simulate_sandwich_attack(&self, tx: &MevTransaction, slippage_tolerance_bps: u64) -> f64 {
+    pub fn simulate_sandwich_attack(
+        &self,
+        tx: &MevTransaction,
+        slippage_tolerance_bps: u64,
+    ) -> f64 {
         let affected_amount = tx.value_eth;
         let slippage_captured = (slippage_tolerance_bps as f64 / 10_000.0) * affected_amount;
         slippage_captured * 0.7
@@ -118,16 +122,14 @@ impl MevAnalyzer {
 
     /// Calculate total MEV exposure for a set of transactions.
     pub fn calculate_mev_exposure(&self, transactions: &[MevTransaction]) -> f64 {
-        transactions
-            .iter()
-            .map(|tx| tx.value_eth * 0.02)
-            .sum()
+        transactions.iter().map(|tx| tx.value_eth * 0.02).sum()
     }
 
     /// Recommend protections to reduce MEV exposure.
     pub fn recommend_mev_protections(&self) -> Vec<String> {
         vec![
-            "Use a private RPC endpoint (e.g. Flashbots Protect) to avoid public mempool exposure.".to_string(),
+            "Use a private RPC endpoint (e.g. Flashbots Protect) to avoid public mempool exposure."
+                .to_string(),
             "Set tight slippage tolerances (0.1%–0.5%) on swap transactions.".to_string(),
             "Implement commit-reveal schemes for sensitive on-chain actions.".to_string(),
             "Use batch auctions (e.g. CoW Protocol) to eliminate front-running.".to_string(),
@@ -136,7 +138,10 @@ impl MevAnalyzer {
     }
 
     /// Detect known MEV searcher patterns in a set of transactions.
-    pub fn detect_searcher_patterns(&self, transactions: &[MevTransaction]) -> Vec<SearcherPattern> {
+    pub fn detect_searcher_patterns(
+        &self,
+        transactions: &[MevTransaction],
+    ) -> Vec<SearcherPattern> {
         let mut patterns = Vec::new();
 
         let mut by_sender: std::collections::HashMap<&str, Vec<&MevTransaction>> =
