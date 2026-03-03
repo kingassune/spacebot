@@ -150,8 +150,7 @@ pub fn scaffold_plugin(plugin_name: &str, domain: &str) -> Vec<GeneratedModule> 
 
 fn sanitize_name(s: &str) -> String {
     s.to_lowercase()
-        .replace(' ', "_")
-        .replace('-', "_")
+        .replace([' ', '-'], "_")
         .chars()
         .filter(|c| c.is_alphanumeric() || *c == '_')
         .collect()

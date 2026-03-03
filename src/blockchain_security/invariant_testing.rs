@@ -193,7 +193,7 @@ fn simulate_property_test(
     let entry = CorpusEntry {
         entry_id: format!("corpus-{:04}", idx),
         call_sequence: vec![format!("{}()", prop.name.trim_start_matches("echidna_"))],
-        coverage_new: idx % 3 == 0,
+        coverage_new: idx.is_multiple_of(3),
         crashed: fails,
         notes: if fails {
             format!("Property '{}' violated", prop.name)

@@ -192,18 +192,19 @@ pub fn detect_approval_vulnerabilities(
     }
 
     // ERC-721 unsafe transfer
-    if *standard == TokenStandard::Erc721 && source.contains("transferFrom(") {
-        if !source.contains("safeTransferFrom(") {
-            findings.push(TokenFinding {
-                vulnerability: TokenVulnerability::UnsafeTransfer,
-                severity: "High".to_string(),
-                description: "ERC-721 transferFrom used without safeTransferFrom; tokens may be \
-                              permanently locked in contracts that don't implement onERC721Received."
-                    .to_string(),
-                recommendation: "Prefer safeTransferFrom() for all NFT transfers."
-                    .to_string(),
-            });
-        }
+    if *standard == TokenStandard::Erc721
+        && source.contains("transferFrom(")
+        && !source.contains("safeTransferFrom(")
+    {
+        findings.push(TokenFinding {
+            vulnerability: TokenVulnerability::UnsafeTransfer,
+            severity: "High".to_string(),
+            description: "ERC-721 transferFrom used without safeTransferFrom; tokens may be \
+                          permanently locked in contracts that don't implement onERC721Received."
+                .to_string(),
+            recommendation: "Prefer safeTransferFrom() for all NFT transfers."
+                .to_string(),
+        });
     }
 
     findings

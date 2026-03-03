@@ -181,10 +181,10 @@ pub fn adapt_to_detection(
 fn technique_bypasses_stack(technique: &EvasionTechnique, stack: &[String]) -> bool {
     // Heuristic: LOLBin techniques bypass Windows Defender but not CrowdStrike.
     for defender in stack {
-        if defender.contains("CrowdStrike") || defender.contains("SentinelOne") {
-            if technique.category == EvasionCategory::LolbinAbuse {
-                return false;
-            }
+        if (defender.contains("CrowdStrike") || defender.contains("SentinelOne"))
+            && technique.category == EvasionCategory::LolbinAbuse
+        {
+            return false;
         }
     }
     technique.bypass_rate >= 0.5

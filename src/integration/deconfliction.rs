@@ -129,7 +129,7 @@ impl Deconfliction {
         team: &str,
         technique_id: &str,
         target: &str,
-    ) -> Result<AuthorizedAction, ConflictEvent> {
+    ) -> Result<AuthorizedAction, Box<ConflictEvent>> {
         let action_id = uuid::Uuid::new_v4().to_string();
         let now = Utc::now();
 
@@ -147,7 +147,7 @@ impl Deconfliction {
                     ),
                 };
                 self.conflict_log.push(event.clone());
-                return Err(event);
+                return Err(Box::new(event));
             }
 
             if !boundary.is_technique_authorized(technique_id) {
@@ -163,7 +163,7 @@ impl Deconfliction {
                     ),
                 };
                 self.conflict_log.push(event.clone());
-                return Err(event);
+                return Err(Box::new(event));
             }
         }
 
