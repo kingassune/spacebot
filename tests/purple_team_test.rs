@@ -3,7 +3,7 @@
 #[cfg(test)]
 mod purple_team_tests {
     use james::integration::purple_team::{
-        AttackDetectionPair, GapPriority, PurpleTeamConfig, PurpleTeamRunner,
+        AttackDetectionPair, PurpleTeamConfig, PurpleTeamRunner,
     };
 
     #[tokio::test]
@@ -127,13 +127,13 @@ mod purple_team_tests {
     #[test]
     fn gap_priority_critical_for_exfiltration() {
         // Directly test gap priority mapping
-        let config = PurpleTeamConfig {
+        let _config = PurpleTeamConfig {
             target: "priority-test".to_string(),
             attack_techniques: vec!["T1041".to_string()],
             detection_rules: vec![],
             coverage_threshold: 80,
         };
-        let runner = PurpleTeamRunner::new("priority-test-001");
+        let _runner = PurpleTeamRunner::new("priority-test-001");
         let pairs = vec![AttackDetectionPair {
             technique_id: "T1041".to_string(),
             technique_name: "Exfiltration Over C2 Channel".to_string(),
