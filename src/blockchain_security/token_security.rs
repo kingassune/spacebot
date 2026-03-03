@@ -136,30 +136,31 @@ impl TokenSecurityAnalyzer {
         }
 
         // Approval race (ERC-20 specific)
-        if standard == TokenStandard::Erc20 {
-            if !source.contains("increaseAllowance")
-                && !source.contains("decreaseAllowance")
-                && source.contains("approve(")
-            {
-                findings.push(TokenFinding {
-                    vulnerability: TokenVulnerability::ApprovalRace,
-                    severity: "Low".into(),
-                    description: "Standard approve() without increaseAllowance/decreaseAllowance; front-run double-spend possible.".into(),
-                    recommendation: "Implement increaseAllowance and decreaseAllowance helpers as per OpenZeppelin ERC20.".into(),
-                });
-            }
+        if standard == TokenStandard::Erc20
+            && !source.contains("increaseAllowance")
+            && !source.contains("decreaseAllowance")
+            && source.contains("approve(")
+        {
+            findings.push(TokenFinding {
+                vulnerability: TokenVulnerability::ApprovalRace,
+                severity: "Low".into(),
+                description: "Standard approve() without increaseAllowance/decreaseAllowance; front-run double-spend possible.".into(),
+                recommendation: "Implement increaseAllowance and decreaseAllowance helpers as per OpenZeppelin ERC20.".into(),
+            });
         }
 
         // Missing return value on transfer (ERC-20 defect)
-        if standard == TokenStandard::Erc20 && source.contains("function transfer(") {
-            if !source.contains("returns (bool)") && !source.contains("return true") {
-                findings.push(TokenFinding {
-                    vulnerability: TokenVulnerability::MissingReturnValue,
-                    severity: "High".into(),
-                    description: "transfer() does not return bool; callers expecting ERC-20 compliance will revert.".into(),
-                    recommendation: "Add 'returns (bool)' and 'return true' to transfer and transferFrom.".into(),
-                });
-            }
+        if standard == TokenStandard::Erc20
+            && source.contains("function transfer(")
+            && !source.contains("returns (bool)")
+            && !source.contains("return true")
+        {
+            findings.push(TokenFinding {
+                vulnerability: TokenVulnerability::MissingReturnValue,
+                severity: "High".into(),
+                description: "transfer() does not return bool; callers expecting ERC-20 compliance will revert.".into(),
+                recommendation: "Add 'returns (bool)' and 'return true' to transfer and transferFrom.".into(),
+            });
         }
 
         let risk_score = compute_token_risk_score(&findings);

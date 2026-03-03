@@ -4,8 +4,8 @@
 mod meta_agent_tests {
     use james::meta_agent::capability_analysis::build_initial_capability_map;
     use james::meta_agent::{
-        CapabilityAnalyzer, CrossDomainCoordinator, EngagementScope, EngagementType,
-        PluginBuilder, PluginConfig, SecurityDomain, SkillGenerator,
+        CapabilityAnalyzer, CrossDomainCoordinator, EngagementScope, EngagementType, PluginBuilder,
+        PluginConfig, SecurityDomain, SkillGenerator,
     };
 
     #[test]

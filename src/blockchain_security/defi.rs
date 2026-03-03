@@ -259,14 +259,13 @@ pub fn analyze_governance(source: &str, protocol: &str) -> anyhow::Result<Govern
     }
 
     // Timelock bypass: very short delay
-    if source.contains("delay = ") || source.contains("TIMELOCK_DELAY") {
-        if !source.contains("require(delay >= ") {
-            vectors.push(GovernanceAttackVector::TimelockBypass);
-            findings.push(
-                "Timelock delay is not enforced with a minimum; bypass may be possible.".into(),
-            );
-            recommendations.push("Require a minimum timelock delay (e.g. 48 hours).".into());
-        }
+    if (source.contains("delay = ") || source.contains("TIMELOCK_DELAY"))
+        && !source.contains("require(delay >= ")
+    {
+        vectors.push(GovernanceAttackVector::TimelockBypass);
+        findings
+            .push("Timelock delay is not enforced with a minimum; bypass may be possible.".into());
+        recommendations.push("Require a minimum timelock delay (e.g. 48 hours).".into());
     }
 
     // Vote buying: off-chain delegation without revocation
