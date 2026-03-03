@@ -3,9 +3,12 @@
 pub mod bridge;
 pub mod consensus;
 pub mod contract_analysis;
+pub mod cross_chain_security;
 pub mod defi;
 pub mod formal_verification;
+pub mod governance_security;
 pub mod invariant_testing;
+pub mod mev_analysis;
 pub mod mev_protection;
 pub mod token_analysis;
 pub mod token_security;

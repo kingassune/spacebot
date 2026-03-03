@@ -21,6 +21,7 @@ pub mod mcp;
 pub mod memory;
 pub mod messaging;
 pub mod meta_agent;
+pub mod nation_state;
 pub mod openai_auth;
 pub mod opencode;
 pub mod pentest;
