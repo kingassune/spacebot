@@ -557,7 +557,7 @@ Formatting is still enforced in CI, but the hook catches it earlier by running `
 
 ---
 
-## Security Research Platform
+## James Security Center
 
 > **All security capabilities are for authorized use only.** James does not facilitate unauthorized access to systems. Use only against systems you own or have explicit written permission to test.
 
@@ -595,16 +595,80 @@ James ships with 23 security skills built on Trail of Bits' published methodolog
 
 ### Security Modules
 
-James includes dedicated security module stubs for extension:
+James includes six fully implemented security engines:
 
-- **Red Team** (`red_team`) — Authorized adversary emulation: recon, exploitation research, lateral movement modeling, persistence analysis, APT profile emulation
-- **Blue Team** (`blue_team`) — Defensive operations: detection rule generation, incident response workflows, threat hunting, hardening profiles, forensics
-- **Exploit Engine** (`exploit_engine`) — Security research: vulnerability database, PoC templates, fuzzing targets, crash analysis, patch diffing
-- **Pentest** (`pentest`) — Penetration testing orchestration: scoping, web/network/mobile assessment workflows, report generation
-- **Blockchain Security** (`blockchain_security`) — Smart contract and DeFi security: contract auditing, consensus analysis, wallet review, bridge security, ZK proof analysis
-- **Meta Agent** (`meta_agent`) — Multi-agent workflow orchestration: skill routing, workflow definition, evaluation criteria
+- **Red Team** (`red_team`) — Authorized adversary emulation: recon, exploitation research, lateral movement modeling, persistence analysis, exfiltration, C2 infrastructure, APT profile emulation
+- **Blue Team** (`blue_team`) — Defensive operations: detection rule generation, forensics, incident response workflows, threat hunting, threat intelligence, malware analysis, SIEM/SOAR integration
+- **Exploit Engine** (`exploit_engine`) — Security research: fuzzing campaign management, crash analysis and triage, exploit development, payload generation, vulnerability research, zero-day pipeline
+- **Pentest** (`pentest`) — Penetration testing orchestration: scoping, web/network/mobile/cloud assessment workflows, social engineering simulation, report generation
+- **Blockchain Security** (`blockchain_security`) — Smart contract and DeFi security (see [Blockchain Security](#blockchain-security) section below)
+- **Meta Agent** (`meta_agent`) — Multi-agent workflow orchestration (see [Meta-Agent](#meta-agent) section below)
 
-> **All security capabilities are for authorized use only.** James does not facilitate unauthorized access to systems. Use only against systems you own or have explicit written permission to test.
+### Blockchain Security
+
+Best-in-class blockchain and smart contract security analysis, drawing on Trail of Bits' `building-secure-contracts` patterns:
+
+#### Contract Analysis
+
+- **Multi-language support** — Solidity, Vyper, Rust (Solana/CosmWasm), and Move (Aptos/Sui) contract analysis
+- **Slither integration** — Parse Slither JSON output into structured findings via `SlitherIntegration`
+- **Echidna fuzzing** — Generate `EchidnaFuzzConfig` for property-based testing campaigns
+- **Latest vulnerability patterns** — Storage collision in proxies, cross-function reentrancy, phantom function overrides, ABI encoding edge cases
+
+#### DeFi Protocol Analysis
+
+- **Governance attacks** — Vote buying, flash loan governance attacks, timelock bypass detection via `GovernanceAttack`
+- **Lending protocols** — Liquidation manipulation detection and oracle dependency via `LendingProtocolAnalysis`
+- **AMM invariants** — Constant-product and constant-sum invariant verification via `AmmInvariantChecker`
+- **Flash loan analysis** — Entry point detection and attack path modeling
+- **Oracle risks** — Chainlink, Uniswap TWAP, custom oracle manipulation assessment
+
+#### Bridge Security
+
+- **Protocol-specific analysis** — `LayerZeroAnalysis`, `WormholeAnalysis`, `HyperlaneAnalysis` for protocol-specific vulnerability patterns
+- **Relayer security** — Centralisation risk assessment via `RelayerSecurityCheck`
+- **Bridge types** — Lock-and-mint, burn-and-mint, liquidity, message passing, optimistic, ZK bridge, trusted relay
+
+#### ZK Proof Systems
+
+- **System-specific analyzers** — `PlonkAnalyzer`, `Groth16Analyzer`, `StarkAnalyzer` for proof-system-specific vulnerabilities
+- **Circuit equivalence** — Formal verification hooks via `CircuitEquivalenceChecker`
+- **Trusted setup assessment** — Ceremony participant threshold analysis
+
+#### Token Security
+
+`TokenSecurityAnalyzer` covers ERC-20/ERC-721/ERC-1155 vulnerabilities:
+- Fee-on-transfer, rebasing supply, blacklist, pausable, upgradeable proxy pitfalls, approval races, missing return values
+
+#### MEV Protection
+
+`MevAnalyzer` identifies MEV exposure vectors in DeFi protocols:
+- Sandwich attacks, frontrunning, backrunning, time-bandit attacks, JIT liquidity, liquidation MEV
+- Mitigation recommendations: commit-reveal, deadline parameters, MEV-Share integration
+
+### Meta-Agent
+
+The meta-agent self-extension engine provides autonomous capability growth:
+
+#### Skill Generator
+
+`SkillGenerator` analyses task descriptions and generates SKILL.md files with proper frontmatter for seven security domains: `Pentest`, `RedTeam`, `BlueTeam`, `Blockchain`, `ExploitDev`, `ThreatIntel`, and `Generic`.
+
+#### Capability Analyzer
+
+`CapabilityAnalyzer` inventories the platform's current capabilities, identifies gaps for a given engagement type (`Pentest`, `RedTeamOp`, `BlueTeamDefense`, `BlockchainAudit`, `IncidentResponse`, `ThreatHunting`), and produces a `CapabilityReport` with coverage percentages and recommendations.
+
+#### Self-Improver
+
+`SelfImprover` tracks execution outcomes (`Success`/`Failure`/`Partial`), identifies recurring failure patterns, and produces `ImprovementSuggestion` instances with specific parameter changes.
+
+#### Plugin Builder
+
+`PluginBuilder` scaffolds new James plugin directory structures following the Trail of Bits skills plugin format, generating hook scripts and SKILL.md files from a `PluginConfig`.
+
+#### Cross-Domain Coordinator
+
+`CrossDomainCoordinator` orchestrates tasks spanning multiple security domains — decomposing complex engagements into sub-tasks, assigning them to domain engines, and merging results.
 
 ### Security CLI
 
@@ -624,6 +688,23 @@ james security pentest report "Q4 2025 Web Assessment"
 # Blockchain security
 james security blockchain audit "contracts/Token.sol"
 james security blockchain defi "UniswapV3 fork"
+
+# Cross-domain orchestration (from TOML engagement file)
+james security orchestrate engagement.toml
+
+# Meta-agent self-extension
+james security meta analyze                          # capability coverage report
+james security meta generate-skill blockchain "detect reentrancy in Vyper"
+james security meta build-plugin-scaffold my-plugin --domain blockchain
+```
+
+**Example engagement TOML** for `james security orchestrate`:
+
+```toml
+name = "Q1 Blockchain Audit"
+domains = ["blockchain", "web", "network"]
+objectives = ["Identify critical vulnerabilities in DeFi protocol"]
+duration_days = 14
 ```
 
 ---

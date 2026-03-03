@@ -4,10 +4,15 @@ pub mod bridge;
 pub mod consensus;
 pub mod contract_analysis;
 pub mod defi;
+pub mod mev_protection;
+pub mod token_security;
 pub mod wallet;
 pub mod zk;
 
 use contract_analysis::{AnalysisResult, Chain, ContractAnalyzer};
+
+pub use mev_protection::{MevAnalysisResult, MevAnalyzer};
+pub use token_security::{TokenAuditResult, TokenSecurityAnalyzer};
 
 /// Top-level engine that dispatches contract analysis across all supported chains.
 #[derive(Debug, Clone)]

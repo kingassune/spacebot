@@ -2,6 +2,122 @@
 
 use chrono::{DateTime, Utc};
 
+/// Outcome of a task execution for tracking purposes.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TaskOutcomeKind {
+    Success,
+    Failure,
+    Partial,
+}
+
+/// Recorded result of a task execution.
+#[derive(Debug, Clone)]
+pub struct TaskOutcome {
+    pub task_id: String,
+    pub kind: TaskOutcomeKind,
+    pub score: f64,
+    pub error: Option<String>,
+    pub recorded_at: DateTime<Utc>,
+}
+
+/// A concrete suggestion for improving performance or coverage.
+#[derive(Debug, Clone)]
+pub struct ImprovementSuggestion {
+    pub id: String,
+    pub description: String,
+    pub target_task_pattern: String,
+    pub expected_impact: f64,
+    pub parameter_changes: Vec<(String, String)>,
+}
+
+/// Tracks outcomes and derives improvement plans.
+#[derive(Debug, Clone)]
+pub struct SelfImprover {
+    outcomes: Vec<TaskOutcome>,
+}
+
+impl SelfImprover {
+    pub fn new() -> Self {
+        Self {
+            outcomes: Vec::new(),
+        }
+    }
+
+    /// Record the outcome of a completed task.
+    pub fn record_outcome(&mut self, task_id: &str, outcome: &TaskOutcome) {
+        let mut stored = outcome.clone();
+        stored.task_id = task_id.to_string();
+        self.outcomes.push(stored);
+    }
+
+    /// Analyze recorded outcomes for recurring failure patterns.
+    pub fn analyze_patterns(&self) -> Vec<ImprovementSuggestion> {
+        let mut suggestions = Vec::new();
+
+        let failures: Vec<&TaskOutcome> = self
+            .outcomes
+            .iter()
+            .filter(|o| o.kind == TaskOutcomeKind::Failure)
+            .collect();
+
+        if failures.len() >= 3 {
+            suggestions.push(ImprovementSuggestion {
+                id: format!("pattern-{}", Utc::now().timestamp()),
+                description: format!(
+                    "Recurring failures detected ({} failures out of {} outcomes). Consider tuning parameters.",
+                    failures.len(),
+                    self.outcomes.len()
+                ),
+                target_task_pattern: "all".to_string(),
+                expected_impact: 0.20,
+                parameter_changes: vec![
+                    ("max_retries".to_string(), "3".to_string()),
+                    ("timeout_secs".to_string(), "120".to_string()),
+                ],
+            });
+        }
+
+        let avg_score: f64 = if self.outcomes.is_empty() {
+            0.0
+        } else {
+            self.outcomes.iter().map(|o| o.score).sum::<f64>() / self.outcomes.len() as f64
+        };
+
+        if avg_score < 0.7 && !self.outcomes.is_empty() {
+            suggestions.push(ImprovementSuggestion {
+                id: format!("score-{}", Utc::now().timestamp()),
+                description: format!(
+                    "Average task score {avg_score:.2} is below 0.70. Review prompts and tool configurations."
+                ),
+                target_task_pattern: "low-score".to_string(),
+                expected_impact: 0.15,
+                parameter_changes: vec![
+                    ("temperature".to_string(), "0.2".to_string()),
+                ],
+            });
+        }
+
+        suggestions
+    }
+
+    /// Apply a suggestion by logging its parameter changes.
+    pub fn apply_suggestion(&self, suggestion: &ImprovementSuggestion) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            !suggestion.parameter_changes.is_empty(),
+            "suggestion has no parameter changes to apply"
+        );
+        // In a full system this would write to a config store.
+        // Here we validate and return Ok to indicate intent was processed.
+        Ok(())
+    }
+}
+
+impl Default for SelfImprover {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ImprovementCategory {
     Accuracy,

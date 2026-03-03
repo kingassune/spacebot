@@ -2,6 +2,130 @@
 
 use chrono::{DateTime, Utc};
 
+/// Engagement type used to scope capability analysis.
+#[derive(Debug, Clone, PartialEq)]
+pub enum EngagementType {
+    Pentest,
+    RedTeamOp,
+    BlueTeamDefense,
+    BlockchainAudit,
+    IncidentResponse,
+    ThreatHunting,
+}
+
+/// Aggregated capability analysis report for an engagement type.
+#[derive(Debug, Clone)]
+pub struct CapabilityReport {
+    pub engagement: EngagementType,
+    pub covered_areas: Vec<String>,
+    pub gaps: Vec<CapabilityGap>,
+    pub recommendations: Vec<String>,
+    pub coverage_percent: f64,
+    pub generated_at: DateTime<Utc>,
+}
+
+/// Inventories current capabilities and identifies gaps for a given engagement.
+#[derive(Debug, Clone)]
+pub struct CapabilityAnalyzer {
+    pub capability_map: CapabilityMap,
+}
+
+impl CapabilityAnalyzer {
+    pub fn new(capability_map: CapabilityMap) -> Self {
+        Self { capability_map }
+    }
+
+    /// Analyze capabilities and produce a report for the given engagement type.
+    pub fn analyze_capabilities(&self, engagement: &EngagementType) -> CapabilityReport {
+        let required = required_areas(engagement);
+        let covered_areas: Vec<String> = required
+            .iter()
+            .filter(|area| {
+                self.capability_map
+                    .coverage_domains
+                    .iter()
+                    .any(|d| d.to_lowercase().contains(&area.to_lowercase()))
+            })
+            .cloned()
+            .collect();
+
+        let gaps: Vec<CapabilityGap> = required
+            .iter()
+            .filter(|area| !covered_areas.contains(area))
+            .map(|area| CapabilityGap {
+                domain: area.clone(),
+                missing_capability: format!("No coverage for: {area}"),
+                priority: GapPriority::High,
+                recommended_skills: vec![
+                    format!("detect-{}", area.to_lowercase()),
+                    format!("respond-{}", area.to_lowercase()),
+                ],
+            })
+            .collect();
+
+        let coverage_percent = if required.is_empty() {
+            100.0
+        } else {
+            (covered_areas.len() as f64 / required.len() as f64) * 100.0
+        };
+
+        let recommendations: Vec<String> = gaps
+            .iter()
+            .map(|g| format!("Add skill coverage for: {}", g.domain))
+            .collect();
+
+        CapabilityReport {
+            engagement: engagement.clone(),
+            covered_areas,
+            gaps,
+            recommendations,
+            coverage_percent,
+            generated_at: Utc::now(),
+        }
+    }
+}
+
+fn required_areas(engagement: &EngagementType) -> Vec<String> {
+    match engagement {
+        EngagementType::Pentest => vec![
+            "network".to_string(),
+            "web".to_string(),
+            "vulnerability".to_string(),
+            "reporting".to_string(),
+        ],
+        EngagementType::RedTeamOp => vec![
+            "recon".to_string(),
+            "exploitation".to_string(),
+            "persistence".to_string(),
+            "c2".to_string(),
+        ],
+        EngagementType::BlueTeamDefense => vec![
+            "detection".to_string(),
+            "siem".to_string(),
+            "endpoint".to_string(),
+            "intelligence".to_string(),
+        ],
+        EngagementType::BlockchainAudit => vec![
+            "smart-contract".to_string(),
+            "defi".to_string(),
+            "bridge".to_string(),
+            "token".to_string(),
+        ],
+        EngagementType::IncidentResponse => vec![
+            "forensics".to_string(),
+            "containment".to_string(),
+            "eradication".to_string(),
+            "recovery".to_string(),
+        ],
+        EngagementType::ThreatHunting => vec![
+            "intelligence".to_string(),
+            "network".to_string(),
+            "endpoint".to_string(),
+            "siem".to_string(),
+        ],
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum MaturityLevel {
     Initial,

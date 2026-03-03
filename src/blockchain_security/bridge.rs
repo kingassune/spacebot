@@ -172,3 +172,153 @@ pub fn generate_bridge_checklist(bridge_type: &BridgeType) -> Vec<String> {
 
     checklist
 }
+
+// ── Protocol-Specific Bridge Analyzes ─────────────────────────────────────
+
+/// LayerZero-specific vulnerability analysis.
+#[derive(Debug, Clone)]
+pub struct LayerZeroAnalysis {
+    pub findings: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+/// Check a contract for LayerZero-specific vulnerabilities.
+pub fn analyze_layerzero(source: &str) -> LayerZeroAnalysis {
+    let mut findings = Vec::new();
+    let mut recommendations = Vec::new();
+
+    if source.contains("lzReceive")
+        && !source.contains("onlyEndpoint")
+        && !source.contains("_msgSender() == lzEndpoint")
+    {
+        findings.push(
+            "lzReceive is not restricted to the LayerZero endpoint; spoofing possible.".into(),
+        );
+        recommendations
+            .push("Gate lzReceive with: require(_msgSender() == address(lzEndpoint)).".into());
+    }
+
+    if source.contains("retryPayload") && !source.contains("hasStoredPayload") {
+        findings.push("retryPayload called without hasStoredPayload check; unsafe retry.".into());
+        recommendations.push("Verify hasStoredPayload before retrying blocked payloads.".into());
+    }
+
+    if !source.contains("trustedRemote") && source.contains("lzReceive") {
+        findings.push("No trustedRemote mapping found; arbitrary source chain acceptance.".into());
+        recommendations.push(
+            "Maintain a trustedRemoteLookup mapping and validate src chain + address.".into(),
+        );
+    }
+
+    LayerZeroAnalysis {
+        findings,
+        recommendations,
+    }
+}
+
+/// Wormhole-specific vulnerability analysis.
+#[derive(Debug, Clone)]
+pub struct WormholeAnalysis {
+    pub findings: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+/// Check a contract for Wormhole-specific vulnerabilities.
+pub fn analyze_wormhole(source: &str) -> WormholeAnalysis {
+    let mut findings = Vec::new();
+    let mut recommendations = Vec::new();
+
+    if source.contains("parseAndVerifyVM") && !source.contains("require(valid") {
+        findings
+            .push("Wormhole VM not validated after parsing; forged VAAs may be accepted.".into());
+        recommendations
+            .push("Check the bool return of parseAndVerifyVM and revert on invalid.".into());
+    }
+
+    if source.contains("emitterAddress") && !source.contains("require(emitterAddress") {
+        findings.push(
+            "emitterAddress not validated against trusted set; arbitrary origin accepted.".into(),
+        );
+        recommendations
+            .push("Maintain a whitelist of trusted emitterAddress values per chain.".into());
+    }
+
+    WormholeAnalysis {
+        findings,
+        recommendations,
+    }
+}
+
+/// Hyperlane-specific vulnerability analysis.
+#[derive(Debug, Clone)]
+pub struct HyperlaneAnalysis {
+    pub findings: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+/// Check a contract for Hyperlane-specific vulnerabilities.
+pub fn analyze_hyperlane(source: &str) -> HyperlaneAnalysis {
+    let mut findings = Vec::new();
+    let mut recommendations = Vec::new();
+
+    if source.contains("handle(") && !source.contains("onlyMailbox") {
+        findings
+            .push("handle() not gated by onlyMailbox modifier; spoofed messages accepted.".into());
+        recommendations.push("Add onlyMailbox modifier to handle() function.".into());
+    }
+
+    if source.contains("interchainSecurityModule") && source.contains("address(0)") {
+        findings.push("ISM set to zero address; no message security verification.".into());
+        recommendations.push("Configure a non-zero ISM for all message routes.".into());
+    }
+
+    HyperlaneAnalysis {
+        findings,
+        recommendations,
+    }
+}
+
+/// Relayer centralisation risk assessment.
+#[derive(Debug, Clone)]
+pub struct RelayerSecurityCheck {
+    pub relayer_count: u32,
+    pub is_permissioned: bool,
+    pub has_rotation: bool,
+    pub risks: Vec<String>,
+    pub recommendations: Vec<String>,
+}
+
+/// Assess relayer security from a bridge contract source.
+pub fn check_relayer_security(source: &str) -> RelayerSecurityCheck {
+    let mut risks = Vec::new();
+    let mut recommendations = Vec::new();
+
+    let is_permissioned = source.contains("onlyRelayer") || source.contains("relayerRole");
+    let has_rotation = source.contains("rotateRelayer") || source.contains("setRelayer");
+    let relayer_count = if source.contains("relayers.length") || source.contains("_relayers[") {
+        0
+    } else {
+        1
+    };
+
+    if relayer_count <= 1 && !source.contains("IRelayerRegistry") {
+        risks.push("Single relayer detected; single point of failure and censorship risk.".into());
+        recommendations.push(
+            "Implement a relayer registry with multiple participants and economic incentives."
+                .into(),
+        );
+    }
+
+    if !has_rotation {
+        risks.push("No relayer rotation mechanism; compromised key cannot be replaced.".into());
+        recommendations.push("Add relayer rotation with time-lock and multisig approval.".into());
+    }
+
+    RelayerSecurityCheck {
+        relayer_count,
+        is_permissioned,
+        has_rotation,
+        risks,
+        recommendations,
+    }
+}

@@ -58,7 +58,7 @@ pub struct ProofData {
     pub verification_key_hash: String,
 }
 
-/// Analyse a ZK circuit and return an audit result.
+/// Analyze a ZK circuit and return an audit result.
 pub fn analyze_zk_circuit(circuit_info: &ZkCircuitInfo) -> ZkAuditResult {
     let mut vulnerabilities = Vec::new();
     let mut findings = Vec::new();
@@ -162,5 +162,122 @@ pub fn assess_trusted_setup(participants: u32, is_mpc: bool) -> String {
             "MPC setup with {} participant(s) provides strong security guarantees.",
             participants,
         )
+    }
+}
+
+// ── Proof-System-Specific Analyzers ───────────────────────────────────────
+
+/// PLONK proof-system vulnerability analyzer.
+pub struct PlonkAnalyzer;
+
+impl PlonkAnalyzer {
+    /// Analyze a PLONK circuit for known vulnerability classes.
+    pub fn analyze(circuit: &ZkCircuitInfo) -> Vec<String> {
+        let mut findings = Vec::new();
+
+        if circuit.has_trusted_setup && circuit.setup_participants < 5 {
+            findings.push(
+                "PLONK universal SRS ceremony had fewer than 5 participants; toxic waste risk."
+                    .into(),
+            );
+        }
+
+        if circuit.constraint_count == 0 {
+            findings
+                .push("PLONK circuit has no constraints; soundness is trivially broken.".into());
+        }
+
+        // Fiat-Shamir weakness: if the verifier transcript is not domain-separated
+        findings.push("Verify Fiat-Shamir transcript includes circuit-specific domain separator to prevent cross-circuit attacks.".into());
+
+        findings
+    }
+}
+
+/// Groth16 proof-system vulnerability analyzer.
+pub struct Groth16Analyzer;
+
+impl Groth16Analyzer {
+    /// Analyze a Groth16 circuit for known vulnerability classes.
+    pub fn analyze(circuit: &ZkCircuitInfo) -> Vec<String> {
+        let mut findings = Vec::new();
+
+        if !circuit.has_trusted_setup {
+            findings.push("Groth16 requires a trusted setup; none detected. Circuit cannot be securely deployed.".into());
+        } else if circuit.setup_participants < 10 {
+            findings.push(format!(
+                "Groth16 trusted setup with {} participant(s) is weak; recommend Perpetual Powers of Tau (>= 76 participants).",
+                circuit.setup_participants
+            ));
+        }
+
+        // Sub-group checks
+        findings.push("Ensure proof elements are validated against the BN254 sub-group to prevent malleability attacks.".into());
+
+        if circuit.input_count == 0 {
+            findings.push("No public inputs; output binding is absent — verifier cannot distinguish valid from invalid computations.".into());
+        }
+
+        findings
+    }
+}
+
+/// STARK proof-system vulnerability analyzer.
+pub struct StarkAnalyzer;
+
+impl StarkAnalyzer {
+    /// Analyze a STARK circuit for known vulnerability classes.
+    pub fn analyze(circuit: &ZkCircuitInfo) -> Vec<String> {
+        let mut findings = Vec::new();
+
+        // STARKs are transparent — no trusted setup risk
+        if circuit.constraint_count > 10_000_000 {
+            findings.push("Large STARK circuit: proof size and verification time grow with constraint count. Profile carefully.".into());
+        }
+
+        findings.push("Verify FRI soundness parameter matches target security level (e.g. 80-bit security requires appropriate query count).".into());
+        findings.push("Check that the prime field size is large enough to prevent birthday attacks on the Reed-Solomon code.".into());
+
+        findings
+    }
+}
+
+/// Formal verification hook for circuit equivalence checking.
+pub struct CircuitEquivalenceChecker;
+
+impl CircuitEquivalenceChecker {
+    /// Compare two circuit constraint counts as a basic equivalence proxy.
+    /// A real implementation would invoke a formal verifier (e.g. Circomspect, EZKL).
+    pub fn check_equivalence(circuit_a: &ZkCircuitInfo, circuit_b: &ZkCircuitInfo) -> bool {
+        circuit_a.system == circuit_b.system
+            && circuit_a.constraint_count == circuit_b.constraint_count
+            && circuit_a.input_count == circuit_b.input_count
+            && circuit_a.output_count == circuit_b.output_count
+    }
+
+    /// Generate a report describing the equivalence check result.
+    pub fn equivalence_report(circuit_a: &ZkCircuitInfo, circuit_b: &ZkCircuitInfo) -> String {
+        let eq = Self::check_equivalence(circuit_a, circuit_b);
+        if eq {
+            format!(
+                "Circuits are structurally equivalent: system={:?}, constraints={}, inputs={}, outputs={}.",
+                circuit_a.system,
+                circuit_a.constraint_count,
+                circuit_a.input_count,
+                circuit_a.output_count
+            )
+        } else {
+            format!(
+                "Circuits differ — A: ({:?}, {}, {}, {}) vs B: ({:?}, {}, {}, {}). Manual review required.",
+                circuit_a.system,
+                circuit_a.constraint_count,
+                circuit_a.input_count,
+                circuit_a.output_count,
+                circuit_b.system,
+                circuit_b.constraint_count,
+                circuit_b.input_count,
+                circuit_b.output_count,
+            )
+        }
     }
 }

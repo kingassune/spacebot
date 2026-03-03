@@ -5,6 +5,61 @@ use std::collections::HashMap;
 
 pub use crate::meta_agent::skill_generator::ThreatIntelReport;
 
+/// Configuration for scaffolding a new James plugin.
+#[derive(Debug, Clone)]
+pub struct PluginConfig {
+    pub name: String,
+    pub domain: String,
+    pub description: String,
+    pub version: String,
+    pub include_hooks: bool,
+    pub include_commands: bool,
+}
+
+/// Scaffolds new James plugin directories following the Trail of Bits skills format.
+#[derive(Debug, Clone)]
+pub struct PluginBuilder {
+    pub output_base: String,
+}
+
+impl PluginBuilder {
+    pub fn new(output_base: impl Into<String>) -> Self {
+        Self {
+            output_base: output_base.into(),
+        }
+    }
+
+    /// Build a plugin manifest from configuration, mirroring the plugin format
+    /// from `trailofbits/skills/plugins/` with optional `hooks/`, `skills/`,
+    /// `commands/`, and `README.md`.
+    pub fn build_plugin(&self, config: &PluginConfig) -> anyhow::Result<PluginManifest> {
+        anyhow::ensure!(!config.name.is_empty(), "plugin name must not be empty");
+        anyhow::ensure!(!config.domain.is_empty(), "plugin domain must not be empty");
+
+        let mut capabilities = vec![format!("domain:{}", config.domain)];
+        if config.include_hooks {
+            capabilities.push("hooks:lifecycle".to_string());
+        }
+        if config.include_commands {
+            capabilities.push("commands:cli".to_string());
+        }
+
+        let mut config_schema = HashMap::new();
+        config_schema.insert("log_level".to_string(), "string".to_string());
+        config_schema.insert("enabled".to_string(), "boolean".to_string());
+
+        Ok(PluginManifest {
+            name: config.name.clone(),
+            version: config.version.clone(),
+            description: config.description.clone(),
+            capabilities,
+            dependencies: Vec::new(),
+            entry_point: format!("{}::run", config.name),
+            config_schema,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PluginManifest {
     pub name: String,

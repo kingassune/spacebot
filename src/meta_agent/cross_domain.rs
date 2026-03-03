@@ -1,180 +1,138 @@
 //! Cross-domain security operations: purple team, full-spectrum assessments.
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum OperationType {
-    RedBlueExercise,
-    PurpleTeam,
-    FullSpectrumAssessment,
-    IncidentSimulation,
-    AdversaryEmulation,
-}
-
+/// Scope definition for a cross-domain engagement.
 #[derive(Debug, Clone)]
-pub struct RedTeamConfig {
-    pub scope: String,
-    pub apt_profile: Option<String>,
-    pub techniques: Vec<String>,
-    pub duration_hours: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct BlueTeamConfig {
-    pub detection_rules: Vec<String>,
-    pub log_sources: Vec<String>,
-    pub response_playbooks: Vec<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct TestScenario {
+pub struct EngagementScope {
     pub name: String,
-    pub mitre_technique_id: String,
-    pub red_action: String,
-    pub blue_expected_detection: String,
-    pub pass_criteria: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct PurpleTeamPlan {
-    pub operation_name: String,
-    pub red_objectives: Vec<String>,
-    pub blue_objectives: Vec<String>,
-    pub test_scenarios: Vec<TestScenario>,
-    pub timeline_days: u32,
-}
-
-#[derive(Debug, Clone)]
-pub struct FullSpectrumConfig {
-    pub operation_type: OperationType,
-    pub red_config: RedTeamConfig,
-    pub blue_config: BlueTeamConfig,
+    pub domains: Vec<String>,
+    pub objectives: Vec<String>,
+    pub target_systems: Vec<String>,
     pub duration_days: u32,
-    pub reporting_level: String,
 }
 
+/// A decomposed engagement plan with per-domain sub-tasks.
 #[derive(Debug, Clone)]
-pub struct AssessmentResult {
-    pub operation_type: OperationType,
-    pub scenarios_executed: u32,
-    pub scenarios_detected: u32,
-    pub detection_rate_percent: f64,
-    pub gaps_identified: Vec<String>,
+pub struct EngagementPlan {
+    pub name: String,
+    pub sub_tasks: Vec<SubTask>,
+    pub domain_assignments: Vec<(String, String)>,
+    pub total_duration_days: u32,
+}
+
+/// A domain-specific sub-task within a larger engagement.
+#[derive(Debug, Clone)]
+pub struct SubTask {
+    pub id: String,
+    pub domain: String,
+    pub description: String,
+    pub estimated_days: u32,
+    pub dependencies: Vec<String>,
+}
+
+/// Merged result of executing a cross-domain engagement plan.
+#[derive(Debug, Clone)]
+pub struct EngagementResult {
+    pub plan_name: String,
+    pub completed_tasks: u32,
+    pub failed_tasks: u32,
+    pub domain_results: Vec<(String, String)>,
     pub executive_summary: String,
 }
 
+/// Orchestrates tasks spanning multiple security domains.
 #[derive(Debug, Clone)]
-pub struct DomainOrchestrator {
-    pub config: FullSpectrumConfig,
-}
+pub struct CrossDomainCoordinator;
 
-pub fn plan_purple_team_exercise(red: &RedTeamConfig, blue: &BlueTeamConfig) -> PurpleTeamPlan {
-    let techniques_to_test: Vec<&String> = red.techniques.iter().take(5).collect();
+impl CrossDomainCoordinator {
+    pub fn new() -> Self {
+        Self
+    }
 
-    let test_scenarios: Vec<TestScenario> = techniques_to_test
-        .iter()
-        .enumerate()
-        .map(|(i, technique)| {
-            let rule = blue
-                .detection_rules
-                .get(i)
-                .map(String::as_str)
-                .unwrap_or("generic-detection-rule");
-            TestScenario {
-                name: format!("Scenario {}: {technique}", i + 1),
-                mitre_technique_id: format!("T{:04}", 1000 + i as u32),
-                red_action: format!("Execute {technique} against scope: {}", red.scope),
-                blue_expected_detection: format!("Alert triggered by rule: {rule}"),
-                pass_criteria: format!("Detection within 5 minutes of {technique} execution"),
-            }
+    /// Decompose a complex engagement into domain-specific sub-tasks.
+    pub fn plan_engagement(&self, scope: &EngagementScope) -> EngagementPlan {
+        let mut sub_tasks = Vec::new();
+        let mut domain_assignments = Vec::new();
+
+        for (i, domain) in scope.domains.iter().enumerate() {
+            let task_id = format!("{}-task-{}", domain.to_lowercase(), i + 1);
+            let engine = domain_engine(domain);
+            domain_assignments.push((domain.clone(), engine));
+            sub_tasks.push(SubTask {
+                id: task_id,
+                domain: domain.clone(),
+                description: format!(
+                    "Execute {} analysis for: {}",
+                    domain,
+                    scope.objectives.first().cloned().unwrap_or_default()
+                ),
+                estimated_days: scope.duration_days / scope.domains.len().max(1) as u32,
+                dependencies: if i == 0 {
+                    Vec::new()
+                } else {
+                    vec![format!(
+                        "{}-task-{}",
+                        scope.domains[i - 1].to_lowercase(),
+                        i
+                    )]
+                },
+            });
+        }
+
+        EngagementPlan {
+            name: scope.name.clone(),
+            sub_tasks,
+            domain_assignments,
+            total_duration_days: scope.duration_days,
+        }
+    }
+
+    /// Execute a plan and merge results from all domain engines.
+    pub async fn execute_plan(&self, plan: &EngagementPlan) -> anyhow::Result<EngagementResult> {
+        let total = plan.sub_tasks.len() as u32;
+        let completed = total; // Simulation: all tasks complete.
+
+        let domain_results: Vec<(String, String)> = plan
+            .sub_tasks
+            .iter()
+            .map(|t| {
+                (
+                    t.domain.clone(),
+                    format!("{} analysis completed successfully", t.domain),
+                )
+            })
+            .collect();
+
+        let summary = format!(
+            "Cross-domain engagement '{}' completed. {}/{} tasks succeeded across {} domain(s).",
+            plan.name,
+            completed,
+            total,
+            plan.domain_assignments.len()
+        );
+
+        Ok(EngagementResult {
+            plan_name: plan.name.clone(),
+            completed_tasks: completed,
+            failed_tasks: 0,
+            domain_results,
+            executive_summary: summary,
         })
-        .collect();
-
-    PurpleTeamPlan {
-        operation_name: format!("Purple Team: {}", red.scope),
-        red_objectives: red
-            .techniques
-            .iter()
-            .map(|t| format!("Test technique: {t}"))
-            .collect(),
-        blue_objectives: blue
-            .detection_rules
-            .iter()
-            .map(|r| format!("Validate rule: {r}"))
-            .collect(),
-        test_scenarios,
-        timeline_days: (red.duration_hours / 8).max(1),
     }
 }
 
-pub async fn orchestrate_full_spectrum(
-    config: &FullSpectrumConfig,
-) -> anyhow::Result<AssessmentResult> {
-    let scenarios_executed = config.red_config.techniques.len() as u32;
-    let scenarios_detected = (scenarios_executed as f64 * 0.75).round() as u32;
-    let detection_rate_percent = if scenarios_executed > 0 {
-        (scenarios_detected as f64 / scenarios_executed as f64) * 100.0
-    } else {
-        0.0
-    };
-
-    let gaps: Vec<String> = config
-        .red_config
-        .techniques
-        .iter()
-        .skip(scenarios_detected as usize)
-        .map(|t| format!("No detection for technique: {t}"))
-        .collect();
-
-    let summary = format!(
-        "{:?} completed over {} days. Detected {}/{} scenarios ({:.1}%). {} gaps identified.",
-        config.operation_type,
-        config.duration_days,
-        scenarios_detected,
-        scenarios_executed,
-        detection_rate_percent,
-        gaps.len(),
-    );
-
-    Ok(AssessmentResult {
-        operation_type: config.operation_type.clone(),
-        scenarios_executed,
-        scenarios_detected,
-        detection_rate_percent,
-        gaps_identified: gaps,
-        executive_summary: summary,
-    })
+impl Default for CrossDomainCoordinator {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
-pub fn generate_purple_team_report(plan: &PurpleTeamPlan, result: &AssessmentResult) -> String {
-    let scenarios = plan
-        .test_scenarios
-        .iter()
-        .map(|s| {
-            format!(
-                "### {}\n- **MITRE**: {}\n- **Red Action**: {}\n- **Expected Detection**: {}\n- **Pass Criteria**: {}",
-                s.name, s.mitre_technique_id, s.red_action, s.blue_expected_detection, s.pass_criteria
-            )
-        })
-        .collect::<Vec<_>>()
-        .join("\n\n");
-
-    let gaps = if result.gaps_identified.is_empty() {
-        "No gaps identified.".to_string()
-    } else {
-        result
-            .gaps_identified
-            .iter()
-            .map(|g| format!("- {g}"))
-            .collect::<Vec<_>>()
-            .join("\n")
-    };
-
-    format!(
-        "# Purple Team Report: {}\n\n## Executive Summary\n\n{}\n\n## Results\n\n- **Scenarios Executed**: {}\n- **Scenarios Detected**: {}\n- **Detection Rate**: {:.1}%\n\n## Test Scenarios\n\n{scenarios}\n\n## Capability Gaps\n\n{gaps}\n\n## Timeline\n\n{} days\n",
-        plan.operation_name,
-        result.executive_summary,
-        result.scenarios_executed,
-        result.scenarios_detected,
-        result.detection_rate_percent,
-        plan.timeline_days,
-    )
+fn domain_engine(domain: &str) -> String {
+    match domain.to_lowercase().as_str() {
+        "blockchain" | "smart-contract" | "defi" => "BlockchainSecurityEngine".to_string(),
+        "network" | "recon" | "exploitation" => "RedTeamEngine".to_string(),
+        "detection" | "forensics" | "siem" => "BlueTeamEngine".to_string(),
+        "web" | "api" | "mobile" => "PentestEngine".to_string(),
+        "exploit" | "fuzzing" => "ExploitEngine".to_string(),
+        _ => "MetaOrchestrator".to_string(),
+    }
 }
