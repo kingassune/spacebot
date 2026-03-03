@@ -28,7 +28,7 @@ mod pipeline_tests {
         let pipeline = SecurityPipeline::new("test-engagement-002");
         let result = pipeline.run_full_engagement(&config).await.unwrap();
 
-        let expected_order = vec![
+        let expected_order = [
             PipelineStage::Reconnaissance,
             PipelineStage::VulnResearch,
             PipelineStage::ExploitDevelopment,
