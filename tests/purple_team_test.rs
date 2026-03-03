@@ -134,7 +134,7 @@ mod purple_team_tests {
             coverage_threshold: 80,
         };
         let _runner = PurpleTeamRunner::new("priority-test-001");
-        let pairs = vec![AttackDetectionPair {
+        let pairs = [AttackDetectionPair {
             technique_id: "T1041".to_string(),
             technique_name: "Exfiltration Over C2 Channel".to_string(),
             attack_executed: true,

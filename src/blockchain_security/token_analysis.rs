@@ -202,8 +202,7 @@ pub fn detect_approval_vulnerabilities(
             description: "ERC-721 transferFrom used without safeTransferFrom; tokens may be \
                           permanently locked in contracts that don't implement onERC721Received."
                 .to_string(),
-            recommendation: "Prefer safeTransferFrom() for all NFT transfers."
-                .to_string(),
+            recommendation: "Prefer safeTransferFrom() for all NFT transfers.".to_string(),
         });
     }
 
