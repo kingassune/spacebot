@@ -14,6 +14,7 @@ pub mod error;
 pub mod exploit_engine;
 pub mod hooks;
 pub mod identity;
+pub mod integration;
 pub mod links;
 pub mod llm;
 pub mod mcp;

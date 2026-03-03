@@ -7,11 +7,14 @@
 
 pub mod apt_emulation;
 pub mod c2;
+pub mod evasion;
 pub mod exfiltration;
 pub mod exploitation;
+pub mod kill_chain;
 pub mod lateral_movement;
 pub mod persistence;
 pub mod recon;
+pub mod supply_chain;
 
 use crate::red_team::{
     apt_emulation::{AptGroup, AptProfile, EmulationResult, EngagementScope},
@@ -92,5 +95,27 @@ impl RedTeamEngine {
     ) -> anyhow::Result<EmulationResult> {
         let profile: AptProfile = apt_emulation::load_apt_profile(group);
         apt_emulation::emulate_apt(group, &profile, scope).await
+    }
+
+    /// Plan and simulate a Cyber Kill Chain execution.
+    pub fn plan_kill_chain(
+        &self,
+        config: &kill_chain::KillChainConfig,
+    ) -> kill_chain::KillChainExecution {
+        kill_chain::plan_kill_chain(config)
+    }
+
+    /// Select an evasion technique chain and test it against the defender stack.
+    pub fn test_evasion(&self, config: &evasion::EvasionConfig) -> evasion::EvasionResult {
+        let chain = evasion::select_evasion_chain(config);
+        evasion::test_evasion(&chain, config)
+    }
+
+    /// Assess supply chain risk for a target organization.
+    pub fn assess_supply_chain(
+        &self,
+        config: &supply_chain::SupplyChainConfig,
+    ) -> supply_chain::SupplyChainResult {
+        supply_chain::assess_supply_chain_risk(config)
     }
 }
