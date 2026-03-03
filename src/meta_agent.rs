@@ -1,22 +1,28 @@
 //! Meta-agent orchestration for complex multi-agent security workflows.
 
+pub mod autonomous_builder;
 pub mod capability_analysis;
 pub mod code_generation;
 pub mod cross_domain;
 pub mod evaluation;
 pub mod feedback;
+pub mod learning_engine;
 pub mod learning_loop;
 pub mod orchestrator;
 pub mod plugin_builder;
+pub mod plugin_marketplace;
 pub mod runtime_registry;
 pub mod self_improvement;
 pub mod skill_generator;
 pub mod skill_router;
 pub mod workflow;
 
+pub use autonomous_builder::{AutonomousBuilder, GeneratedModule, ModuleCategory, ModuleSpec};
 pub use capability_analysis::{CapabilityAnalyzer, CapabilityReport, EngagementType};
 pub use cross_domain::{CrossDomainCoordinator, EngagementPlan, EngagementResult, EngagementScope};
+pub use learning_engine::{EngagementResult as LearningEngagementResult, LearningEngine};
 pub use plugin_builder::{PluginBuilder, PluginConfig};
+pub use plugin_marketplace::{Plugin, PluginMarketplace, ReviewStatus};
 pub use self_improvement::{ImprovementSuggestion, SelfImprover, TaskOutcome, TaskOutcomeKind};
 pub use skill_generator::{GeneratedSkill, SecurityDomain, SkillGenerator};
 
@@ -33,6 +39,9 @@ pub struct MetaAgent {
     pub cross_domain: CrossDomainCoordinator,
     pub skill_registry: runtime_registry::SkillRegistry,
     pub knowledge_base: learning_loop::KnowledgeBase,
+    pub autonomous_builder: AutonomousBuilder,
+    pub learning_engine: LearningEngine,
+    pub plugin_marketplace: PluginMarketplace,
 }
 
 impl MetaAgent {
@@ -49,6 +58,9 @@ impl MetaAgent {
             cross_domain: CrossDomainCoordinator::new(),
             skill_registry: runtime_registry::SkillRegistry::new(),
             knowledge_base: learning_loop::KnowledgeBase::new(),
+            autonomous_builder: AutonomousBuilder::new(),
+            learning_engine: LearningEngine::new(),
+            plugin_marketplace: PluginMarketplace::new(),
         }
     }
 

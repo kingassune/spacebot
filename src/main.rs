@@ -57,6 +57,9 @@ enum Command {
     /// Security assessment and research tooling
     #[command(subcommand)]
     Security(SecurityCommand),
+    /// Nation-state threat emulation (authorized engagements only)
+    #[command(subcommand)]
+    NationState(NationStateCommand),
 }
 
 #[derive(Subcommand)]
@@ -82,6 +85,9 @@ enum SecurityCommand {
     /// Integration pipeline and orchestration workflows
     #[command(subcommand)]
     Integration(IntegrationCommand),
+    /// Nation-state adversary emulation
+    #[command(subcommand)]
+    NationState(NationStateCommand),
     /// Run a cross-domain engagement from a TOML definition file
     Orchestrate {
         /// Path to engagement definition TOML file
@@ -138,6 +144,26 @@ enum BlockchainCommand {
     /// Analyze a DeFi protocol
     Defi {
         /// Protocol name or address
+        protocol: String,
+    },
+    /// Run formal verification on a smart contract
+    FormalVerify {
+        /// Contract file path or source
+        contract: String,
+    },
+    /// Audit an ERC-20/721/1155 token contract
+    TokenAudit {
+        /// Token contract address or file path
+        address: String,
+    },
+    /// Analyse MEV exposure for a transaction
+    MevAnalysis {
+        /// Transaction hash or description
+        tx_hash: String,
+    },
+    /// Audit a DAO or on-chain governance system
+    GovernanceAudit {
+        /// Protocol name or governance contract address
         protocol: String,
     },
 }
@@ -221,6 +247,21 @@ enum MetaCommand {
         /// Operation type (purple, full-spectrum, incident-sim)
         operation: String,
     },
+    /// Autonomously build a new capability module
+    Build {
+        /// Module specification description
+        module_spec: String,
+    },
+    /// Record an engagement result for platform learning
+    Learn {
+        /// Engagement identifier
+        engagement_id: String,
+    },
+    /// Manage the plugin marketplace
+    Marketplace {
+        /// Action to perform (list, install <name>, audit <name>)
+        action: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -247,6 +288,25 @@ enum IntegrationCommand {
         name: String,
         /// Target organization
         target: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum NationStateCommand {
+    /// Plan and manage a nation-state adversary campaign
+    Campaign {
+        /// Campaign name
+        name: String,
+    },
+    /// Manage attack infrastructure for a campaign
+    Infrastructure {
+        /// Action to perform (deploy, rotate, burn)
+        action: String,
+    },
+    /// Emulate the TTPs of a specific APT group
+    Emulate {
+        /// APT group name or designation (e.g. APT28, Lazarus)
+        apt_group: String,
     },
 }
 
@@ -403,6 +463,7 @@ fn main() -> anyhow::Result<()> {
         Command::Auth(auth_cmd) => cmd_auth(cli.config, auth_cmd),
         Command::Secrets(secrets_cmd) => cmd_secrets(cli.config, secrets_cmd),
         Command::Security(security_cmd) => cmd_security(security_cmd),
+        Command::NationState(ns_cmd) => cmd_nation_state(ns_cmd),
     }
 }
 
@@ -3029,6 +3090,47 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 println!("DeFi protocol analysis: {protocol}");
                 println!("Use 'james start' and ask James to analyze DeFi protocol: {protocol}");
             }
+            BlockchainCommand::FormalVerify { contract } => {
+                println!("Formal verification for contract: {contract}");
+                println!("Use 'james start' and ask James to formally verify: {contract}");
+            }
+            BlockchainCommand::TokenAudit { address } => {
+                println!("Token audit for: {address}");
+                println!("Use 'james start' and ask James to audit token at: {address}");
+            }
+            BlockchainCommand::MevAnalysis { tx_hash } => {
+                use james::blockchain_security::mev_analysis::{MevAnalyzer, MevTransaction};
+                let analyzer = MevAnalyzer::new("protocol");
+                let tx = MevTransaction {
+                    tx_hash: tx_hash.clone(),
+                    from: "0x0000000000000000000000000000000000000001".to_string(),
+                    to: "0x0000000000000000000000000000000000000002".to_string(),
+                    description: format!("Transaction {tx_hash}"),
+                    gas_price_gwei: 20.0,
+                    value_eth: 1.0,
+                };
+                let vulns = analyzer.analyze_mempool_vulnerability(&tx);
+                println!("MEV vulnerability analysis for: {tx_hash}");
+                println!(
+                    "Potential attack types: {}",
+                    vulns
+                        .iter()
+                        .map(|v| format!("{v:?}"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                );
+                for rec in analyzer.recommend_mev_protections() {
+                    println!("  • {rec}");
+                }
+            }
+            BlockchainCommand::GovernanceAudit { protocol } => {
+                use james::blockchain_security::governance_security::{
+                    GovernanceAnalyzer, VotingMechanism,
+                };
+                let analyzer = GovernanceAnalyzer::new(&protocol, VotingMechanism::TokenWeighted);
+                let report = analyzer.generate_governance_report();
+                println!("{report}");
+            }
         },
         SecurityCommand::Exploit(exploit_cmd) => match exploit_cmd {
             ExploitCommand::Fuzz { target } => {
@@ -3153,6 +3255,49 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 println!("Orchestrating {operation} operation");
                 println!("Use 'james start' and ask James to orchestrate a {operation} operation");
             }
+            MetaCommand::Build { module_spec } => {
+                use james::meta_agent::{AutonomousBuilder, ModuleCategory, ModuleSpec};
+                let mut builder = AutonomousBuilder::new();
+                let spec = ModuleSpec {
+                    name: module_spec.replace(' ', "_").to_lowercase(),
+                    category: ModuleCategory::SecurityTool,
+                    description: module_spec.clone(),
+                    required_traits: vec!["Debug".to_string(), "Clone".to_string()],
+                };
+                let module = builder.generate_module(&spec);
+                println!("Generated module: {}", module.name);
+                println!("Category: {:?}", module.category);
+                println!(
+                    "Quality gate: {}",
+                    if module.quality_passed {
+                        "PASSED"
+                    } else {
+                        "FAILED"
+                    }
+                );
+            }
+            MetaCommand::Learn { engagement_id } => {
+                use james::meta_agent::{LearningEngagementResult, LearningEngine};
+                let mut engine = LearningEngine::new();
+                let result = LearningEngagementResult {
+                    engagement_id: engagement_id.clone(),
+                    engagement_type: "general".to_string(),
+                    target: "unknown".to_string(),
+                    success: true,
+                    techniques_used: Vec::new(),
+                    detections_triggered: 0,
+                };
+                engine.record_engagement(result);
+                println!("{}", engine.generate_lessons_learned());
+            }
+            MetaCommand::Marketplace { action } => {
+                use james::meta_agent::PluginMarketplace;
+                let marketplace = PluginMarketplace::new();
+                let available = marketplace.list_available_plugins();
+                println!("Plugin marketplace action: {action}");
+                println!("Available approved plugins: {}", available.len());
+                println!("Use 'james start' and ask James to manage the plugin marketplace.");
+            }
         },
         SecurityCommand::Integration(integration_cmd) => match integration_cmd {
             IntegrationCommand::RunPipeline { target, operator } => {
@@ -3207,6 +3352,9 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 println!("Phases planned: {}", result.phase_results.len());
             }
         },
+        SecurityCommand::NationState(ns_cmd) => {
+            cmd_nation_state_security(ns_cmd);
+        }
         SecurityCommand::Orchestrate { engagement_file } => {
             println!(
                 "Loading engagement definition: {}",
@@ -3273,6 +3421,53 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+fn cmd_nation_state_security(ns_cmd: NationStateCommand) {
+    cmd_nation_state_inner(ns_cmd);
+}
+
+fn cmd_nation_state(ns_cmd: NationStateCommand) -> anyhow::Result<()> {
+    cmd_nation_state_inner(ns_cmd);
+    Ok(())
+}
+
+fn cmd_nation_state_inner(ns_cmd: NationStateCommand) {
+    use james::nation_state::{
+        NationStateEngine,
+        campaign::{CampaignObjective, NationStateCampaign},
+    };
+    match ns_cmd {
+        NationStateCommand::Campaign { name } => {
+            let mut engine = NationStateEngine::new();
+            let campaign = engine.create_campaign(
+                &name,
+                vec![
+                    CampaignObjective::Espionage,
+                    CampaignObjective::IntellectualPropertyTheft,
+                ],
+                90,
+            );
+            println!("{}", campaign.generate_campaign_report());
+        }
+        NationStateCommand::Infrastructure { action } => {
+            println!("Infrastructure action: {action}");
+            println!(
+                "Use 'james start' and ask James to manage nation-state infrastructure for: {action}"
+            );
+        }
+        NationStateCommand::Emulate { apt_group } => {
+            let mut campaign = NationStateCampaign::new(
+                "emulation-001",
+                &apt_group,
+                vec![CampaignObjective::Espionage],
+                30,
+            );
+            campaign.plan_campaign();
+            println!("APT emulation campaign planned for: {apt_group}");
+            println!("{}", campaign.generate_campaign_report());
+        }
+    }
 }
 
 #[cfg(test)]

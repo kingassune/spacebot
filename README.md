@@ -595,14 +595,15 @@ James ships with 23 security skills built on Trail of Bits' published methodolog
 
 ### Security Modules
 
-James includes six fully implemented security engines:
+James includes nine fully implemented security engines:
 
 - **Red Team** (`red_team`) — Authorized adversary emulation: recon, exploitation research, lateral movement modeling, persistence analysis, exfiltration, C2 infrastructure, APT profile emulation
 - **Blue Team** (`blue_team`) — Defensive operations: detection rule generation, forensics, incident response workflows, threat hunting, threat intelligence, malware analysis, SIEM/SOAR integration
 - **Exploit Engine** (`exploit_engine`) — Security research: fuzzing campaign management, crash analysis and triage, exploit development, payload generation, vulnerability research, zero-day pipeline
 - **Pentest** (`pentest`) — Penetration testing orchestration: scoping, web/network/mobile/cloud assessment workflows, social engineering simulation, report generation
 - **Blockchain Security** (`blockchain_security`) — Smart contract and DeFi security (see [Blockchain Security](#blockchain-security) section below)
-- **Meta Agent** (`meta_agent`) — Multi-agent workflow orchestration (see [Meta-Agent](#meta-agent) section below)
+- **Meta Agent** (`meta_agent`) — Multi-agent workflow orchestration and self-extension (see [Meta-Agent](#meta-agent) section below)
+- **Nation-State Emulation** (`nation_state`) — Advanced nation-state threat emulation (see [Nation-State Emulation](#nation-state-emulation) section below)
 
 ### Blockchain Security
 
@@ -646,6 +647,69 @@ Best-in-class blockchain and smart contract security analysis, drawing on Trail 
 - Sandwich attacks, frontrunning, backrunning, time-bandit attacks, JIT liquidity, liquidation MEV
 - Mitigation recommendations: commit-reveal, deadline parameters, MEV-Share integration
 
+#### Extended Blockchain Analysis (Phase 3)
+
+New submodules added in Phase 3:
+
+- **MEV Analysis** (`mev_analysis`) — `MevAnalyzer` for deep MEV attack analysis: frontrunning, backrunning, sandwich attacks, JIT liquidity, uncle-block bandit, and searcher pattern detection across DeFi mempool transactions
+- **Cross-Chain Security** (`cross_chain_security`) — `CrossChainAnalyzer` for bridge protocol auditing: message replay, fake proof, validator collusion, finality exploits, bridge drain, and wrapped token desync detection with chain-specific finality configuration checks
+- **Governance Security** (`governance_security`) — `GovernanceAnalyzer` for DAO and on-chain governance: flash loan voting, proposal griefing, quorum manipulation, timelock bypass, treasury drain, bribery attack simulation, and voting power concentration assessment
+
+### Nation-State Emulation
+
+> **Authorized use only.** All nation-state simulation capabilities are strictly for authorized red team exercises, threat emulation programs, and security research.
+
+`NationStateEngine` orchestrates six submodules for advanced APT emulation:
+
+#### Campaign Management (`campaign`)
+
+`NationStateCampaign` manages the full lifecycle of a nation-state operation:
+- **Objectives** — Espionage, Sabotage, Influence, FinancialTheft, IntellectualPropertyTheft, InfrastructureDisruption
+- **Phases** — Reconnaissance → InitialAccess → Establishment → InternalRecon → LateralMovement → Collection → Exfiltration → ImpactOps
+- **Status tracking** — Planning, Active, Paused, Completed, Burned
+- Detection risk assessment and campaign reporting
+
+#### Attack Infrastructure (`infrastructure`)
+
+`AttackInfrastructure` models C2 infrastructure with operational realism:
+- C2 nodes with protocol selection (HTTPS, DNS, WebSocket, ICMP, Custom)
+- Traffic redirectors (Apache, Nginx, CloudFront, AzureCDN, FastlyCDN)
+- VPN anonymisation chains with hop-by-hop tracking
+- Domain-fronting configuration via CDN providers
+- Infrastructure health monitoring and topology mapping
+
+#### Tradecraft (`tradecraft`)
+
+`Tradecraft` enforces operational security across five levels (Minimal → DenialAndDeception):
+- Tiered opsec rules enforced by level
+- Communication security plans with primary/fallback channels
+- Cover identity management with documented legends
+- Attribution risk scoring (0.0–1.0)
+- Countermeasure recommendations
+
+#### Supply Chain Attacks (`supply_chain`)
+
+`SupplyChainAttack` simulates eight attack vectors:
+- BuildSystemCompromise, DependencyConfusion, TypoSquatting, MaintainerCompromise
+- UpdateHijacking, CodeSigningCompromise, MirrorPoisoning, CICompromise
+- Dependency tree analysis, weak link identification, time-to-detection estimation
+
+#### Cyber-Physical Attacks (`cyber_physical`)
+
+`CyberPhysicalAttack` models ICS/OT targeting across eight critical infrastructure sectors:
+- **Protocols** — Modbus, DNP3, OPC-UA, EtherNet/IP, BACnet, PROFINET, IEC 61850, S7Comm
+- **Sectors** — PowerGrid, WaterTreatment, NuclearFacility, TransportNetwork, TelecomNetwork, FinancialSystem, HealthcareSystem, ManufacturingPlant
+- Safety impact assessment (None → Catastrophic) with population, recovery time, and economic cost estimates
+- OT-specific mitigations aligned with sector standards (NERC CIP, AWIA 2018, NRC RG 5.71)
+
+#### Influence Operations (`influence_ops`)
+
+`InfluenceOperation` models information warfare campaigns:
+- **Techniques** — Disinformation, Misinformation, Propaganda, Astroturfing, BotNetworks, DeepfakeGeneration, SocialMediaManipulation, MediaPlanting, HackAndLeak
+- **Platforms** — Twitter, Facebook, Telegram, Reddit, YouTube, TikTok, NewsMedia, Forums
+- Narrative spread modelling with reach, engagement, and adoption estimates
+- Attribution risk assessment and counter-narrative effectiveness scoring
+
 ### Meta-Agent
 
 The meta-agent self-extension engine provides autonomous capability growth:
@@ -670,6 +734,14 @@ The meta-agent self-extension engine provides autonomous capability growth:
 
 `CrossDomainCoordinator` orchestrates tasks spanning multiple security domains — decomposing complex engagements into sub-tasks, assigning them to domain engines, and merging results.
 
+#### Self-Extending Platform (Phase 3)
+
+New meta-agent submodules for autonomous platform growth:
+
+- **Autonomous Builder** (`autonomous_builder`) — `AutonomousBuilder` generates new Rust module skeletons from a `ModuleSpec`. Selects appropriate templates for five module categories (SecurityTool, AnalysisEngine, DataPipeline, IntegrationAdapter, ReportGenerator), renders skeleton code, runs a quality gate (doc comments, test presence, public function count), and proposes capability extensions based on identified gaps
+- **Learning Engine** (`learning_engine`) — `LearningEngine` records engagement results and derives technique effectiveness scores, detection correlations, and improvement recommendations. Tracks detection rates per technique and promotes high-performing technique chains
+- **Plugin Marketplace** (`plugin_marketplace`) — `PluginMarketplace` manages community-contributed security extensions with full lifecycle: registration, integrity verification (code hash), security auditing, and install management. Plugins progress through: Pending → InReview → Approved → Deprecated
+
 ### Security CLI
 
 ```bash
@@ -688,6 +760,19 @@ james security pentest report "Q4 2025 Web Assessment"
 # Blockchain security
 james security blockchain audit "contracts/Token.sol"
 james security blockchain defi "UniswapV3 fork"
+james security blockchain formal-verify "contracts/Token.sol"
+james security blockchain token-audit "0xTokenAddress"
+james security blockchain mev-analysis "0xtxhash"
+james security blockchain governance-audit "CompoundGovernor"
+
+# Nation-state emulation (authorized use only)
+james security nation-state campaign "APT28 Emulation Q1"
+james security nation-state emulate APT28
+james security nation-state infrastructure deploy
+
+# Or via top-level subcommand
+james nation-state campaign "Operation Aurora Emulation"
+james nation-state emulate Lazarus
 
 # Cross-domain orchestration (from TOML engagement file)
 james security orchestrate engagement.toml
@@ -696,6 +781,9 @@ james security orchestrate engagement.toml
 james security meta analyze                          # capability coverage report
 james security meta generate-skill blockchain "detect reentrancy in Vyper"
 james security meta build-plugin-scaffold my-plugin --domain blockchain
+james security meta build "supply chain scanner"     # autonomous module builder
+james security meta learn engagement-2025-01         # record engagement results
+james security meta marketplace list                 # plugin marketplace
 ```
 
 **Example engagement TOML** for `james security orchestrate`:
