@@ -126,12 +126,8 @@ impl NationStateCampaign {
             return base_risk;
         }
 
-        let phase_modifier: f64 = self
-            .phases
-            .iter()
-            .map(|p| phase_detection_risk(p))
-            .sum::<f64>()
-            / self.phases.len() as f64;
+        let phase_modifier: f64 =
+            self.phases.iter().map(phase_detection_risk).sum::<f64>() / self.phases.len() as f64;
 
         (base_risk + phase_modifier * 0.4).min(1.0)
     }

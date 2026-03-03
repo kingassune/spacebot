@@ -235,11 +235,10 @@ fn default_template_for_category(category: &ModuleCategory) -> ModuleTemplate {
         name: format!("{:?} Default", category),
         category: category.clone(),
         skeleton_code: format!(
-            "//! {description} for the `{{name}}` module.\n\n\
+            "//! {category:?} for the `{{name}}` module.\n\n\
              /// Primary struct for the {{name}} module.\n\
              #[derive(Debug, Clone)]\npub struct {{name}}Engine {{}}\n\n\
              impl {{name}}Engine {{\n    /// Create a new instance.\n    pub fn new() -> Self {{ Self {{}} }}\n}}\n",
-            description = format!("{category:?}")
         ),
         required_traits: vec!["Debug".to_string(), "Clone".to_string()],
         test_template: "#[cfg(test)]\nmod tests {\n    use super::*;\n\n    #[test]\n    fn test_{name}_new() {\n        let engine = {name}Engine::new();\n        let _ = format!(\"{:?}\", engine);\n    }\n}\n".to_string(),
