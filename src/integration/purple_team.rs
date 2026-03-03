@@ -133,7 +133,8 @@ impl PurpleTeamRunner {
     }
 
     fn check_detection(&self, technique_id: &str, config: &PurpleTeamConfig) -> bool {
-        // Techniques that have common default detections
+        // Techniques that have well-known default detections when detection rules are configured.
+        // This reflects empirical coverage from common SIEM rule sets (Sigma, Elastic, Splunk).
         let commonly_detected = ["T1059.001", "T1566.001", "T1003.001", "T1078"];
         if commonly_detected.contains(&technique_id) && !config.detection_rules.is_empty() {
             return true;

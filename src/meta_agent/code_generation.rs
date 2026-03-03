@@ -197,7 +197,7 @@ fn render_skill_template(config: &CodeGenConfig, module_name: &str) -> String {
          /// Run the {module_name} skill against the given config.\n\
          pub fn run(config: &{camel}Config) -> {camel}Result {{\n\
          {camel}Result {{\n\
-         findings: vec![format!(\"Analysed: {{}}\", config.target)],\n\
+         findings: vec![format!(\"Analyzed: {{}}\", config.target)],\n\
          score: 0.0,\n\
          }}\n\
          }}\n",

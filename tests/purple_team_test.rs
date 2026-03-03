@@ -147,8 +147,6 @@ mod purple_team_tests {
         // This tests that the pair data is correctly structured
         assert!(!pairs[0].detection_fired);
         assert_eq!(pairs[0].technique_id, "T1041");
-        drop(config);
-        drop(runner);
     }
 
     #[tokio::test]

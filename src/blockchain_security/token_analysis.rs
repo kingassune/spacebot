@@ -142,8 +142,8 @@ pub fn detect_approval_vulnerabilities(
         });
     }
 
-    // Missing return value
-    if source.contains("transfer(") && !source.contains("returns (bool)") {
+    // Missing return value — check that transfer function declaration includes return type
+    if source.contains("function transfer(") && !transfer_fn_has_bool_return(source) {
         findings.push(TokenFinding {
             vulnerability: TokenVulnerability::MissingReturnValue,
             severity: "Medium".to_string(),
@@ -329,4 +329,25 @@ fn build_summary(
         findings.len(),
         risk_score
     )
+}
+
+/// Returns true if the `transfer` function declaration in the source includes a bool return type.
+fn transfer_fn_has_bool_return(source: &str) -> bool {
+    let mut in_transfer = false;
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("function transfer(") {
+            in_transfer = true;
+        }
+        if in_transfer {
+            if trimmed.contains("returns") && trimmed.contains("bool") {
+                return true;
+            }
+            // End of function signature block (opening brace)
+            if trimmed.contains('{') {
+                return false;
+            }
+        }
+    }
+    false
 }

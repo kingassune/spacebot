@@ -248,27 +248,32 @@ fn check_property(
     // Lightweight heuristic: look for obvious violations of the predicate.
     let predicate_lower = prop.predicate.to_lowercase();
 
-    // If the predicate references a variable and we can see it's unchecked, flag it.
-    if predicate_lower.contains("balance") && source.contains("balances[") {
-        if !source.contains("require(balances[") && !source.contains("assert(balances[") {
-            return (
-                false,
-                Some(CounterExample {
-                    property_name: prop.name.clone(),
-                    trace: vec![
-                        "Initial state: balance = 0".to_string(),
-                        "Transition: withdraw(amount) called".to_string(),
-                        "Final state: balance underflows".to_string(),
-                    ],
-                    violating_state: "balance < 0".to_string(),
-                    description: format!(
-                        "Property '{}' may be violated: balance manipulation without bounds check",
-                        prop.name
-                    ),
-                }),
-            );
-        }
+    // If the predicate references a balance variable and we can find unchecked manipulation, flag it.
+    if predicate_lower.contains("balance") && has_unchecked_balance_manipulation(source) {
+        return (
+            false,
+            Some(CounterExample {
+                property_name: prop.name.clone(),
+                trace: vec![
+                    "Initial state: balance = 0".to_string(),
+                    "Transition: withdraw(amount) called".to_string(),
+                    "Final state: balance underflows".to_string(),
+                ],
+                violating_state: "balance < 0".to_string(),
+                description: format!(
+                    "Property '{}' may be violated: balance manipulation without bounds check",
+                    prop.name
+                ),
+            }),
+        );
     }
 
     (true, None)
+}
+
+/// Returns true if the source maps balance storage without a require/assert bounds check.
+fn has_unchecked_balance_manipulation(source: &str) -> bool {
+    source.contains("balances[")
+        && !source.contains("require(balances[")
+        && !source.contains("assert(balances[")
 }
