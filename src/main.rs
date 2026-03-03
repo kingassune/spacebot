@@ -3085,7 +3085,7 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 domain,
                 description,
             } => {
-                use james::meta_agent::{SecurityDomain, SkillGenerator};
+                use james::meta_agent::SkillGenerator;
                 let sec_domain = parse_security_domain(&domain);
                 let generator = SkillGenerator::new(sec_domain.clone());
                 let skill = generator.generate_skill(&description, sec_domain);

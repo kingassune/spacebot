@@ -5,7 +5,7 @@ mod meta_agent_tests {
     use james::meta_agent::capability_analysis::build_initial_capability_map;
     use james::meta_agent::{
         CapabilityAnalyzer, CrossDomainCoordinator, EngagementScope, EngagementType,
-        GeneratedSkill, PluginBuilder, PluginConfig, SecurityDomain, SkillGenerator,
+        PluginBuilder, PluginConfig, SecurityDomain, SkillGenerator,
     };
 
     #[test]
@@ -199,7 +199,7 @@ mod meta_agent_tests {
 
 #[cfg(test)]
 mod blockchain_security_tests {
-    use james::blockchain_security::contract_analysis::{Chain, ContractAnalyzer, SeverityLevel};
+    use james::blockchain_security::contract_analysis::{Chain, ContractAnalyzer};
     use james::blockchain_security::mev_protection::MevAnalyzer;
     use james::blockchain_security::token_security::TokenSecurityAnalyzer;
 
