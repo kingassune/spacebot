@@ -73,6 +73,12 @@ enum SecurityCommand {
     /// Blockchain and smart contract security analysis
     #[command(subcommand)]
     Blockchain(BlockchainCommand),
+    /// Exploit development and research tooling
+    #[command(subcommand)]
+    Exploit(ExploitCommand),
+    /// Meta-agent self-extension and orchestration
+    #[command(subcommand)]
+    Meta(MetaCommand),
 }
 
 #[derive(Subcommand)]
@@ -125,6 +131,70 @@ enum BlockchainCommand {
     Defi {
         /// Protocol name or address
         protocol: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum ExploitCommand {
+    /// Start a fuzzing campaign
+    Fuzz {
+        /// Target binary path
+        target: String,
+    },
+    /// Triage crash findings
+    Triage {
+        /// Crash directory path
+        crash_dir: String,
+    },
+    /// Start exploit development
+    Develop {
+        /// Target binary or service
+        target: String,
+    },
+    /// Generate a payload
+    Payload {
+        /// Architecture (x86, x64, arm, arm64)
+        #[arg(short, long, default_value = "x64")]
+        arch: String,
+        /// Operating system (linux, windows, macos)
+        #[arg(short, long, default_value = "linux")]
+        os: String,
+    },
+    /// Vulnerability research
+    Research {
+        /// Target name and version
+        target: String,
+    },
+    /// Launch zero-day pipeline
+    ZeroDay {
+        /// Target name
+        target: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum MetaCommand {
+    /// Generate a new skill from a vulnerability pattern
+    Generate {
+        /// Vulnerability pattern name
+        pattern: String,
+    },
+    /// Analyze capability gaps
+    AnalyzeGaps,
+    /// Improve an existing skill
+    Improve {
+        /// Skill name
+        skill: String,
+    },
+    /// Build a detection plugin from threat intel
+    BuildPlugin {
+        /// Threat intel description
+        intel: String,
+    },
+    /// Orchestrate a cross-domain security operation
+    Orchestrate {
+        /// Operation type (purple, full-spectrum, incident-sim)
+        operation: String,
     },
 }
 
@@ -2893,6 +2963,62 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             BlockchainCommand::Defi { protocol } => {
                 println!("DeFi protocol analysis: {protocol}");
                 println!("Use 'james start' and ask James to analyze DeFi protocol: {protocol}");
+            }
+        },
+        SecurityCommand::Exploit(exploit_cmd) => match exploit_cmd {
+            ExploitCommand::Fuzz { target } => {
+                println!("Fuzzing target: {target}");
+                println!(
+                    "Use 'james start' and ask James to start a fuzzing campaign for: {target}"
+                );
+            }
+            ExploitCommand::Triage { crash_dir } => {
+                println!("Triaging crashes in: {crash_dir}");
+                println!("Use 'james start' and ask James to triage crashes from: {crash_dir}");
+            }
+            ExploitCommand::Develop { target } => {
+                println!("Exploit development for: {target}");
+                println!(
+                    "Use 'james start' and ask James to begin exploit development for: {target}"
+                );
+            }
+            ExploitCommand::Payload { arch, os } => {
+                println!("Generating payload for {arch}/{os}");
+                println!("Use 'james start' and ask James to generate a {arch}/{os} payload");
+            }
+            ExploitCommand::Research { target } => {
+                println!("Vulnerability research for: {target}");
+                println!(
+                    "Use 'james start' and ask James to research vulnerabilities in: {target}"
+                );
+            }
+            ExploitCommand::ZeroDay { target } => {
+                println!("Zero-day pipeline for: {target}");
+                println!(
+                    "Use 'james start' and ask James to run the zero-day pipeline for: {target}"
+                );
+            }
+        },
+        SecurityCommand::Meta(meta_cmd) => match meta_cmd {
+            MetaCommand::Generate { pattern } => {
+                println!("Generating skill for vulnerability pattern: {pattern}");
+                println!("Use 'james start' and ask James to generate a skill for: {pattern}");
+            }
+            MetaCommand::AnalyzeGaps => {
+                println!("Analyzing capability gaps...");
+                println!("Use 'james start' and ask James to analyze capability gaps");
+            }
+            MetaCommand::Improve { skill } => {
+                println!("Improving skill: {skill}");
+                println!("Use 'james start' and ask James to improve the skill: {skill}");
+            }
+            MetaCommand::BuildPlugin { intel } => {
+                println!("Building detection plugin from: {intel}");
+                println!("Use 'james start' and ask James to build a plugin from: {intel}");
+            }
+            MetaCommand::Orchestrate { operation } => {
+                println!("Orchestrating {operation} operation");
+                println!("Use 'james start' and ask James to orchestrate a {operation} operation");
             }
         },
     }

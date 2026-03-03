@@ -4442,6 +4442,7 @@ dependencies = [
  "fastembed",
  "flate2",
  "futures",
+ "glob",
  "hex",
  "ignore",
  "imap",
@@ -4481,6 +4482,7 @@ dependencies = [
  "sha2",
  "slack-morphism",
  "sqlx",
+ "strum",
  "teloxide",
  "tempfile",
  "thiserror 2.0.18",
@@ -4498,6 +4500,7 @@ dependencies = [
  "twitch-irc",
  "urlencoding",
  "uuid",
+ "walkdir",
  "zip 2.4.2",
 ]
 
