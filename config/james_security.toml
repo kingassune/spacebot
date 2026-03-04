@@ -1,0 +1,37 @@
+[james]
+name = "James Security Center"
+version = "0.3.0"
+description = "Nation-state capable security research platform"
+
+[modules]
+red_team = { enabled = true, requires_authorization = true }
+blue_team = { enabled = true }
+exploit_engine = { enabled = true, requires_authorization = true }
+pentest = { enabled = true, requires_authorization = true }
+blockchain_security = { enabled = true }
+meta_agent = { enabled = true }
+
+[blockchain]
+default_chain = "ethereum"
+# Supported chains for blockchain security analysis.
+# Contract language support: Solidity (EVM chains), Rust (solana), Go/Rust (cosmos/polkadot).
+# Move-based auditing is available for sui and aptos.
+# Bridge and DeFi skills work across all EVM-compatible chains.
+supported_chains = [
+  "ethereum",
+  "solana",
+  "cosmos",
+  "polkadot",
+  "avalanche",
+  "polygon",
+  "arbitrum",
+  "optimism",
+  "base",
+  "sui",
+  "aptos",
+]
+
+[authorization]
+require_roe = true  # Require Rules of Engagement for offensive operations
+audit_logging = true
+scope_validation = true

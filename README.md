@@ -2,12 +2,12 @@
   <img src=".github/Ball.png" alt="James" width="120" height="120" />
 </p>
 
-<h1 align="center">James</h1>
+<h1 align="center">James Security Center</h1>
 
 <p align="center">
-  <strong>An AI agent for teams, communities, and authorized security research.</strong><br/>
+  <strong>Nation-state capable security research platform and AI agent.</strong><br/>
   Thinks, executes, and responds — concurrently, not sequentially.<br/>
-  Never blocks. Never forgets.
+  Never blocks. Never forgets. Always authorized.
 </p>
 
 <p align="center">
@@ -72,6 +72,119 @@ This is why the architecture exists. A single-threaded agent breaks the moment t
 | **[james.sh](https://james.sh)** | One-click hosted deploy. Connect your platforms, configure your agent, done.                |
 | **Self-hosted**                        | Single Rust binary. No Docker, no server dependencies, no microservices. Clone, build, run. |
 | **Docker**                             | Container image with everything included. Mount a volume for persistent data.               |
+
+---
+
+## James Security Center
+
+James is a nation-state capable security research platform built on a specialized multi-process AI architecture. Every security operation runs in its own dedicated process — red team engagements, blockchain audits, incident response, and threat hunting all execute concurrently without blocking each other or the conversation.
+
+```
+┌───────────────────────────────────────────────────────────────────────────────┐
+│                          James Security Center                                │
+│                                                                               │
+│  ┌──────────┐ ┌──────────┐ ┌──────────────┐ ┌─────────┐ ┌────────────────┐  │
+│  │ Red Team │ │Blue Team │ │  Blockchain  │ │ Pentest │ │ Exploit Engine │  │
+│  │  Module  │ │  Module  │ │   Security   │ │ Module  │ │    Module      │  │
+│  └────┬─────┘ └────┬─────┘ └──────┬───────┘ └────┬────┘ └───────┬────────┘  │
+│       │             │              │               │              │           │
+│       └─────────────┴──────────────┴───────────────┴──────────────┘           │
+│                                   │                                           │
+│                     ┌─────────────▼──────────────┐                            │
+│                     │      Meta-Agent Engine      │                           │
+│                     │  (self-extension + routing) │                           │
+│                     └─────────────┬──────────────┘                            │
+│                                   │                                           │
+│           ┌───────────────────────┼───────────────────────┐                   │
+│      ┌────▼────┐           ┌──────▼──────┐          ┌─────▼────┐             │
+│      │ Channel │           │   Workers   │          │ Branches │             │
+│      │ (user)  │           │(background) │          │ (think)  │             │
+│      └─────────┘           └─────────────┘          └──────────┘             │
+└───────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Security Modules
+
+| Module | Description | Authorization Required |
+|--------|-------------|------------------------|
+| `red_team` | APT emulation, kill chain, C2, lateral movement, persistence | ✅ Yes |
+| `blue_team` | Threat detection, incident response, malware analysis, SIEM | No |
+| `exploit_engine` | Fuzzing, crash triage, ROP chains, heap exploitation, evasion | ✅ Yes |
+| `pentest` | Web, network, cloud, mobile security testing | ✅ Yes |
+| `blockchain_security` | Smart contract audit, DeFi, bridges, ZK proofs, consensus | No |
+| `meta_agent` | Self-extension, capability analysis, cross-domain orchestration | No |
+
+### Plugin Architecture
+
+Plugins extend James with domain-specific skills and commands. Each plugin lives in `plugins/` and follows the Trail of Bits skills format.
+
+```
+plugins/
+├── james-blockchain-security/   # Smart contract and DeFi auditing
+│   ├── plugin.toml
+│   ├── skills/contract-audit/SKILL.md
+│   ├── skills/defi-security/SKILL.md
+│   ├── skills/bridge-audit/SKILL.md
+│   ├── skills/wallet-security/SKILL.md
+│   ├── skills/zk-audit/SKILL.md
+│   ├── skills/consensus-analysis/SKILL.md
+│   └── commands/blockchain-audit.md
+├── james-red-team/              # APT emulation and exploit development
+├── james-blue-team/             # Threat detection and incident response
+├── james-meta-agent/            # Self-extension and capability analysis
+└── james-pentest/               # Web, network, cloud, and mobile testing
+```
+
+### Blockchain Security
+
+James supports comprehensive security analysis across 11 chains:
+
+`ethereum` · `solana` · `cosmos` · `polkadot` · `avalanche` · `polygon` · `arbitrum` · `optimism` · `base` · `sui` · `aptos`
+
+Capabilities:
+- **Smart Contract Audit** — Solidity, Rust (Solana/CosmWasm), Move; reentrancy, access control, arithmetic overflow, flash loans, oracle manipulation
+- **DeFi Protocol Analysis** — flash loan attack simulation, oracle risk, MEV/sandwich attacks, liquidity pool security
+- **Bridge Security** — message verification, nonce management, ecrecover patterns, mint authority, per-bridge-type checklists
+- **ZK Proof Auditing** — trusted setup, under-constrained circuits, nullifier uniqueness; Groth16, PLONK, STARK, Halo2, Bulletproofs
+- **Consensus Analysis** — 51% PoW, 33.4% BFT/PoS thresholds, validator scoring, finality analysis
+
+### Meta-Agent Self-Extension
+
+The meta-agent can analyze James's current capabilities, identify gaps against MITRE ATT&CK / OWASP / NIST CSF, and generate new skills and plugins:
+
+```
+james security meta analyze              # coverage gap report
+james security meta generate-skill ...  # generate a new SKILL.md
+james security meta build-plugin-scaffold my-plugin --domain blockchain
+```
+
+The `PlatformScanner` enumerates all skills, plugins, and Rust modules and maps them to security frameworks to surface missing coverage.
+
+### Getting Started
+
+**Red Team Engagement:**
+```bash
+james security red-team engage --threat-actor APT29 --scope "192.168.1.0/24"
+james security red-team kill-chain --stage recon
+```
+
+**Blue Team / Threat Hunting:**
+```bash
+james security blue-team hunt --datasource splunk --timeframe 24h
+james security blue-team respond --incident IR-2025-001
+```
+
+**Penetration Test:**
+```bash
+james security pentest engage --target https://example.com --scope web
+james security pentest report --format html
+```
+
+**Blockchain Audit:**
+```bash
+james security blockchain audit --contract 0x1234... --chain ethereum
+/blockchain-audit https://github.com/protocol/contracts --scope full
+```
 
 ---
 
