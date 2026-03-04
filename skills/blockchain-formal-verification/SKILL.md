@@ -1,6 +1,11 @@
 ---
 name: blockchain-formal-verification
 description: "Formal verification and invariant testing skill for smart contracts. Covers Solidity assert/require extraction, Echidna/Medusa invariant campaigns, state machine modeling, and temporal property checking."
+allowed-tools:
+  - Bash
+  - Read
+  - Grep
+  - Glob
 ---
 
 # Blockchain Formal Verification

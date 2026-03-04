@@ -6,6 +6,7 @@ pub mod contract_analysis;
 pub mod cross_chain_security;
 pub mod defi;
 pub mod formal_verification;
+pub mod god_mode;
 pub mod governance_security;
 pub mod invariant_testing;
 pub mod mev_analysis;
@@ -19,6 +20,7 @@ pub mod zk;
 use contract_analysis::{AnalysisResult, Chain, ContractAnalyzer};
 
 pub use formal_verification::{VerificationConfig, VerificationResult, verify_contract_properties};
+pub use god_mode::{AuditFinding, FullAuditResult, GodModeAnalyzer, GodModeConfig};
 pub use invariant_testing::{FuzzCampaignResult, InvariantTestConfig, run_invariant_campaign};
 pub use mev_protection::{MevAnalysisResult, MevAnalyzer};
 pub use token_analysis::{TokenAnalysisResult, analyze_token_contract};

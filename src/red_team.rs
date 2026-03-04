@@ -5,16 +5,27 @@
 //! simulation-only and must only be used within a documented, authorised
 //! engagement scope.
 
+pub mod adversary_profiles;
 pub mod apt_emulation;
 pub mod c2;
+pub mod campaign;
 pub mod evasion;
 pub mod exfiltration;
 pub mod exploitation;
 pub mod kill_chain;
 pub mod lateral_movement;
+pub mod nation_state;
 pub mod persistence;
 pub mod recon;
 pub mod supply_chain;
+
+pub use adversary_profiles::{
+    AdversaryProfile, CampaignPhases, MitreTechnique, all_profiles, find_profile,
+};
+pub use campaign::{Campaign, CampaignPhase, CampaignResult, RulesOfEngagement};
+pub use nation_state::{
+    C2InfrastructureType, EmulationSummary, EvasionTechnique, NationStateEmulator,
+};
 
 use crate::red_team::{
     apt_emulation::{AptGroup, AptProfile, EmulationResult, EngagementScope},

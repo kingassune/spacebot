@@ -1,8 +1,13 @@
 //! Meta-agent orchestration for complex multi-agent security workflows.
+//!
+//! The Meta Agent can autonomously extend the James platform by scanning for
+//! capability gaps, generating new skills and modules, validating them, and
+//! integrating them into the runtime registry.
 
 pub mod autonomous_builder;
 pub mod autonomous_pipeline;
 pub mod capability_analysis;
+pub mod capability_gap_detector;
 pub mod code_generation;
 pub mod cross_domain;
 pub mod engagement_planner;
@@ -16,6 +21,7 @@ pub mod plugin_builder;
 pub mod plugin_marketplace;
 pub mod runtime_registry;
 pub mod self_improvement;
+pub mod skill_factory;
 pub mod skill_generator;
 pub mod skill_router;
 pub mod threat_intel_integration;
@@ -23,6 +29,9 @@ pub mod workflow;
 
 pub use autonomous_builder::{AutonomousBuilder, GeneratedModule, ModuleCategory, ModuleSpec};
 pub use capability_analysis::{CapabilityAnalyzer, CapabilityReport, EngagementType};
+pub use capability_gap_detector::{
+    CapabilityGap, CapabilityGapDetector, GapPriority, GapReport, SecurityDomain as GapDomain,
+};
 pub use cross_domain::{CrossDomainCoordinator, EngagementPlan, EngagementResult, EngagementScope};
 pub use engagement_planner::{EngagementPlanConfig, EngagementPlanner};
 pub use learning_engine::{EngagementResult as LearningEngagementResult, LearningEngine};
@@ -32,6 +41,7 @@ pub use platform_scanner::{
 pub use plugin_builder::{PluginBuilder, PluginConfig};
 pub use plugin_marketplace::{Plugin, PluginMarketplace, ReviewStatus};
 pub use self_improvement::{ImprovementSuggestion, SelfImprover, TaskOutcome, TaskOutcomeKind};
+pub use skill_factory::{AllowedTool, ReferenceDoc, SkillFactory, SkillSpec, ToolScript};
 pub use skill_generator::{GeneratedSkill, SecurityDomain, SkillGenerator};
 pub use threat_intel_integration::{
     IocCorrelationResult, ThreatActorProfile, ThreatIntelConnector, TtpMappingResult,
