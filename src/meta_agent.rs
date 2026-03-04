@@ -1,6 +1,7 @@
 //! Meta-agent orchestration for complex multi-agent security workflows.
 
 pub mod autonomous_builder;
+pub mod autonomous_pipeline;
 pub mod capability_analysis;
 pub mod code_generation;
 pub mod cross_domain;
