@@ -175,14 +175,8 @@ impl TokenStandardAuditor {
         check_upgrade_patterns(source, &standard, &mut findings);
 
         let compliance_score = compute_compliance_score(&interface_checks, &findings);
-        let critical_count = findings
-            .iter()
-            .filter(|f| f.severity == "Critical")
-            .count();
-        let high_count = findings
-            .iter()
-            .filter(|f| f.severity == "High")
-            .count();
+        let critical_count = findings.iter().filter(|f| f.severity == "Critical").count();
+        let high_count = findings.iter().filter(|f| f.severity == "High").count();
         let is_compliant = critical_count == 0 && high_count == 0 && compliance_score >= 70;
 
         let summary = format!(
@@ -576,11 +570,10 @@ fn check_rebasing_fee_on_transfer(
                  `transfer(amount)` delivers exactly `amount` to the recipient will malfunction \
                  (e.g., DEX pools, lending protocols, bridges)."
                     .into(),
-            recommendation:
-                "Document fee-on-transfer behaviour clearly. Integrators must use \
+            recommendation: "Document fee-on-transfer behaviour clearly. Integrators must use \
                  `balanceOf(recipient)` before and after transfers to compute the actual received \
                  amount."
-                    .into(),
+                .into(),
             eip_reference: "EIP-20 Security Considerations".into(),
         });
     }
@@ -620,11 +613,10 @@ fn check_cross_standard_interactions(
             standard: standard.clone(),
             kind: ComplianceViolationKind::CrossStandardInteraction,
             severity: "High".into(),
-            description:
-                "Contract inherits or implements both ERC-1155 and ERC-20 interfaces. \
+            description: "Contract inherits or implements both ERC-1155 and ERC-20 interfaces. \
                  Ambiguous transfer semantics can cause integrators to invoke the wrong transfer \
                  function, leading to incorrect token handling."
-                    .into(),
+                .into(),
             recommendation:
                 "Separate ERC-1155 and ERC-20 concerns into distinct contracts, or explicitly \
                  document which interface takes precedence and add input guards."

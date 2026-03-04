@@ -9,15 +9,14 @@
 //! - `james security nation-state <profile>` — nation-state emulation engagement
 //! - `james security meta extend` — trigger meta-agent self-extension
 
+use crate::blockchain_security::contract_analysis::Chain;
 use crate::blockchain_security::{
     BlockchainSecurityEngine, TokenStandardAuditResult, TokenStandardAuditor,
 };
-use crate::blockchain_security::contract_analysis::Chain;
-use crate::meta_agent::{
-    EngagementPlanConfig, EngagementPlanner, MetaAgent, ThreatActorProfile,
-    ThreatIntelConnector,
-};
 use crate::meta_agent::engagement_planner::RulesOfEngagement;
+use crate::meta_agent::{
+    EngagementPlanConfig, EngagementPlanner, MetaAgent, ThreatActorProfile, ThreatIntelConnector,
+};
 use serde::{Deserialize, Serialize};
 
 // — Result types —

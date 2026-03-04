@@ -242,13 +242,13 @@ impl EngagementPlanner {
     }
 
     /// Validate a target against the given rules of engagement.
-    pub fn validate_scope(
-        &self,
-        target: &str,
-        roe: &RulesOfEngagement,
-    ) -> ScopeValidationResult {
+    pub fn validate_scope(&self, target: &str, roe: &RulesOfEngagement) -> ScopeValidationResult {
         // Check explicit out-of-scope list first.
-        if roe.out_of_scope.iter().any(|entry| target.contains(entry.as_str())) {
+        if roe
+            .out_of_scope
+            .iter()
+            .any(|entry| target.contains(entry.as_str()))
+        {
             return ScopeValidationResult {
                 target: target.to_string(),
                 in_scope: false,
@@ -258,7 +258,10 @@ impl EngagementPlanner {
 
         // If an in-scope list is provided, the target must match.
         if !roe.in_scope.is_empty()
-            && !roe.in_scope.iter().any(|entry| target.contains(entry.as_str()))
+            && !roe
+                .in_scope
+                .iter()
+                .any(|entry| target.contains(entry.as_str()))
         {
             return ScopeValidationResult {
                 target: target.to_string(),
@@ -291,7 +294,11 @@ impl EngagementPlanner {
             config.engagement_id,
             config.phases.len(),
             config.target_name,
-            if config.rules_of_engagement.allow_destructive { "YES" } else { "NO" },
+            if config.rules_of_engagement.allow_destructive {
+                "YES"
+            } else {
+                "NO"
+            },
             config.rules_of_engagement.max_impact_level,
         );
 
@@ -452,7 +459,8 @@ fn build_default_phase_plan(phase: &EngagementPhase) -> PhasePlan {
             vec![
                 PlannedAction {
                     id: "exfil-01".to_string(),
-                    description: "Stage simulated data for exfiltration (canary files only)".to_string(),
+                    description: "Stage simulated data for exfiltration (canary files only)"
+                        .to_string(),
                     technique_id: Some("T1074".to_string()),
                     impact_level: "Low".to_string(),
                     notify_blue_team: true,
@@ -460,7 +468,8 @@ fn build_default_phase_plan(phase: &EngagementPhase) -> PhasePlan {
                 },
                 PlannedAction {
                     id: "exfil-02".to_string(),
-                    description: "Simulate exfiltration over HTTPS C2 channel (no real data)".to_string(),
+                    description: "Simulate exfiltration over HTTPS C2 channel (no real data)"
+                        .to_string(),
                     technique_id: Some("T1041".to_string()),
                     impact_level: "Low".to_string(),
                     notify_blue_team: true,
@@ -471,16 +480,14 @@ fn build_default_phase_plan(phase: &EngagementPhase) -> PhasePlan {
             2.0_f32,
         ),
         EngagementPhase::Cleanup => (
-            vec![
-                PlannedAction {
-                    id: "cleanup-01".to_string(),
-                    description: "Remove all artefacts and persistence mechanisms".to_string(),
-                    technique_id: Some("T1070".to_string()),
-                    impact_level: "None".to_string(),
-                    notify_blue_team: true,
-                    prerequisites: Vec::new(),
-                },
-            ],
+            vec![PlannedAction {
+                id: "cleanup-01".to_string(),
+                description: "Remove all artefacts and persistence mechanisms".to_string(),
+                technique_id: Some("T1070".to_string()),
+                impact_level: "None".to_string(),
+                notify_blue_team: true,
+                prerequisites: Vec::new(),
+            }],
             vec!["All artefacts removed and confirmed with blue team".to_string()],
             2.0_f32,
         ),

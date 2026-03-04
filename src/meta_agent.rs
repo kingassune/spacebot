@@ -24,7 +24,7 @@ pub mod workflow;
 pub use autonomous_builder::{AutonomousBuilder, GeneratedModule, ModuleCategory, ModuleSpec};
 pub use capability_analysis::{CapabilityAnalyzer, CapabilityReport, EngagementType};
 pub use cross_domain::{CrossDomainCoordinator, EngagementPlan, EngagementResult, EngagementScope};
-pub use engagement_planner::{EngagementPlanner, EngagementPlanConfig};
+pub use engagement_planner::{EngagementPlanConfig, EngagementPlanner};
 pub use learning_engine::{EngagementResult as LearningEngagementResult, LearningEngine};
 pub use platform_scanner::{
     CoverageGap, ModuleEntry, PlatformManifest, PlatformScanner, SkillEntry,

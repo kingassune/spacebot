@@ -151,9 +151,10 @@ pub struct ThreatActorProfile {
 impl ThreatActorProfile {
     /// Returns a built-in profile for a well-known APT group by name.
     pub fn lookup(name: &str) -> Option<Self> {
-        builtin_threat_actor_profiles()
-            .into_iter()
-            .find(|p| p.name.eq_ignore_ascii_case(name) || p.aliases.iter().any(|a| a.eq_ignore_ascii_case(name)))
+        builtin_threat_actor_profiles().into_iter().find(|p| {
+            p.name.eq_ignore_ascii_case(name)
+                || p.aliases.iter().any(|a| a.eq_ignore_ascii_case(name))
+        })
     }
 
     /// Returns all built-in threat actor profiles.
@@ -317,10 +318,7 @@ impl ThreatIntelConnector {
         let detection_coverage = if ttps.is_empty() {
             0.0
         } else {
-            ttps.iter()
-                .filter(|ttp| !ttp.detections.is_empty())
-                .count() as f64
-                / ttps.len() as f64
+            ttps.iter().filter(|ttp| !ttp.detections.is_empty()).count() as f64 / ttps.len() as f64
         };
 
         TtpMappingResult {
@@ -413,10 +411,21 @@ fn builtin_threat_actor_profiles() -> Vec<ThreatActorProfile> {
                 TechniqueId("T1027".to_string()),
                 TechniqueId("T1566.001".to_string()),
             ],
-            tooling: vec!["WellMess".to_string(), "WellMail".to_string(), "SUNBURST".to_string()],
-            target_industries: vec!["Government".to_string(), "Healthcare".to_string(), "Energy".to_string()],
+            tooling: vec![
+                "WellMess".to_string(),
+                "WellMail".to_string(),
+                "SUNBURST".to_string(),
+            ],
+            target_industries: vec![
+                "Government".to_string(),
+                "Healthcare".to_string(),
+                "Energy".to_string(),
+            ],
             target_regions: vec!["US".to_string(), "EU".to_string(), "NATO".to_string()],
-            known_campaigns: vec!["SolarWinds".to_string(), "COVID-19 Vaccine Research".to_string()],
+            known_campaigns: vec![
+                "SolarWinds".to_string(),
+                "COVID-19 Vaccine Research".to_string(),
+            ],
             mitre_url: "https://attack.mitre.org/groups/G0016/".to_string(),
         },
         ThreatActorProfile {
@@ -430,10 +439,21 @@ fn builtin_threat_actor_profiles() -> Vec<ThreatActorProfile> {
                 TechniqueId("T1059.005".to_string()),
                 TechniqueId("T1003.001".to_string()),
             ],
-            tooling: vec!["X-Agent".to_string(), "Sofacy".to_string(), "Zebrocy".to_string()],
-            target_industries: vec!["Government".to_string(), "Military".to_string(), "Media".to_string()],
+            tooling: vec![
+                "X-Agent".to_string(),
+                "Sofacy".to_string(),
+                "Zebrocy".to_string(),
+            ],
+            target_industries: vec![
+                "Government".to_string(),
+                "Military".to_string(),
+                "Media".to_string(),
+            ],
             target_regions: vec!["US".to_string(), "EU".to_string(), "Ukraine".to_string()],
-            known_campaigns: vec!["DNC Hack 2016".to_string(), "French Election 2017".to_string()],
+            known_campaigns: vec![
+                "DNC Hack 2016".to_string(),
+                "French Election 2017".to_string(),
+            ],
             mitre_url: "https://attack.mitre.org/groups/G0007/".to_string(),
         },
         ThreatActorProfile {
@@ -447,10 +467,22 @@ fn builtin_threat_actor_profiles() -> Vec<ThreatActorProfile> {
                 TechniqueId("T1486".to_string()),
                 TechniqueId("T1059.001".to_string()),
             ],
-            tooling: vec!["HOPLIGHT".to_string(), "AppleJeus".to_string(), "BLINDINGCAN".to_string()],
-            target_industries: vec!["Finance".to_string(), "Cryptocurrency".to_string(), "Defense".to_string()],
+            tooling: vec![
+                "HOPLIGHT".to_string(),
+                "AppleJeus".to_string(),
+                "BLINDINGCAN".to_string(),
+            ],
+            target_industries: vec![
+                "Finance".to_string(),
+                "Cryptocurrency".to_string(),
+                "Defense".to_string(),
+            ],
             target_regions: vec!["Global".to_string()],
-            known_campaigns: vec!["Sony Hack 2014".to_string(), "SWIFT Attacks".to_string(), "Axie Infinity Hack".to_string()],
+            known_campaigns: vec![
+                "Sony Hack 2014".to_string(),
+                "SWIFT Attacks".to_string(),
+                "Axie Infinity Hack".to_string(),
+            ],
             mitre_url: "https://attack.mitre.org/groups/G0032/".to_string(),
         },
     ]
@@ -458,14 +490,70 @@ fn builtin_threat_actor_profiles() -> Vec<ThreatActorProfile> {
 
 fn build_ttps_from_techniques(technique_ids: &[TechniqueId]) -> Vec<Ttp> {
     let mapping: HashMap<&str, (&str, KillChainPhase, &str)> = [
-        ("T1566.001", ("Spearphishing Attachment", KillChainPhase::Delivery, "Email gateway logs, attachment sandboxing")),
-        ("T1195.002", ("Compromise Software Supply Chain", KillChainPhase::Delivery, "Software integrity checks, SBOMs")),
-        ("T1071.001", ("Application Layer Protocol: Web", KillChainPhase::CommandAndControl, "Network traffic analysis, proxy logs")),
-        ("T1027", ("Obfuscated Files or Information", KillChainPhase::Installation, "File system monitoring, AV signatures")),
-        ("T1003.001", ("LSASS Memory", KillChainPhase::Exploitation, "Credential access alerts, LSASS protection")),
-        ("T1059.001", ("PowerShell", KillChainPhase::Exploitation, "PowerShell logging, AMSI events")),
-        ("T1059.005", ("Visual Basic", KillChainPhase::Exploitation, "Office macro alerts, script block logging")),
-        ("T1486", ("Data Encrypted for Impact", KillChainPhase::ActionsOnObjectives, "Backup monitoring, ransomware canaries")),
+        (
+            "T1566.001",
+            (
+                "Spearphishing Attachment",
+                KillChainPhase::Delivery,
+                "Email gateway logs, attachment sandboxing",
+            ),
+        ),
+        (
+            "T1195.002",
+            (
+                "Compromise Software Supply Chain",
+                KillChainPhase::Delivery,
+                "Software integrity checks, SBOMs",
+            ),
+        ),
+        (
+            "T1071.001",
+            (
+                "Application Layer Protocol: Web",
+                KillChainPhase::CommandAndControl,
+                "Network traffic analysis, proxy logs",
+            ),
+        ),
+        (
+            "T1027",
+            (
+                "Obfuscated Files or Information",
+                KillChainPhase::Installation,
+                "File system monitoring, AV signatures",
+            ),
+        ),
+        (
+            "T1003.001",
+            (
+                "LSASS Memory",
+                KillChainPhase::Exploitation,
+                "Credential access alerts, LSASS protection",
+            ),
+        ),
+        (
+            "T1059.001",
+            (
+                "PowerShell",
+                KillChainPhase::Exploitation,
+                "PowerShell logging, AMSI events",
+            ),
+        ),
+        (
+            "T1059.005",
+            (
+                "Visual Basic",
+                KillChainPhase::Exploitation,
+                "Office macro alerts, script block logging",
+            ),
+        ),
+        (
+            "T1486",
+            (
+                "Data Encrypted for Impact",
+                KillChainPhase::ActionsOnObjectives,
+                "Backup monitoring, ransomware canaries",
+            ),
+        ),
     ]
     .into_iter()
     .collect();
@@ -473,13 +561,15 @@ fn build_ttps_from_techniques(technique_ids: &[TechniqueId]) -> Vec<Ttp> {
     technique_ids
         .iter()
         .filter_map(|technique_id| {
-            mapping.get(technique_id.0.as_str()).map(|(name, phase, detection)| Ttp {
-                technique_id: technique_id.clone(),
-                kill_chain_phase: phase.clone(),
-                procedure: name.to_string(),
-                tools: Vec::new(),
-                detections: vec![detection.to_string()],
-            })
+            mapping
+                .get(technique_id.0.as_str())
+                .map(|(name, phase, detection)| Ttp {
+                    technique_id: technique_id.clone(),
+                    kill_chain_phase: phase.clone(),
+                    procedure: name.to_string(),
+                    tools: Vec::new(),
+                    detections: vec![detection.to_string()],
+                })
         })
         .collect()
 }
