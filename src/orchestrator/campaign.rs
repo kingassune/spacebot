@@ -209,17 +209,24 @@ impl Campaign {
     }
 
     /// Roll back to the most recent checkpoint.
+    ///
+    /// Restores state to immediately after the checkpoint phase completed.
+    /// Phases beyond the checkpoint are discarded and the next phase index is
+    /// set to the one following the checkpoint phase so execution can resume.
     pub fn rollback(&mut self) -> Option<&Checkpoint> {
         if let Some(checkpoint) = self.checkpoints.last() {
             let phase = &checkpoint.after_phase;
-            let rollback_index = self
+            let checkpoint_index = self
                 .config
                 .phases
                 .iter()
                 .position(|p| p == phase)
                 .unwrap_or(0);
-            self.current_phase_index = rollback_index;
-            self.completed_phases.truncate(rollback_index);
+            // Keep completed phases up to and including the checkpoint phase.
+            // The next phase to execute is the one after the checkpoint.
+            let keep_count = checkpoint_index + 1;
+            self.completed_phases.truncate(keep_count);
+            self.current_phase_index = keep_count;
             self.state = CampaignState::RolledBack;
             self.checkpoints.last()
         } else {

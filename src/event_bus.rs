@@ -169,12 +169,17 @@ impl SecurityEventBus {
     }
 
     /// Publish a security event. Returns the number of active subscribers that
-    /// received the event, or an error if the channel is full or no sender exists.
+    /// received the event, or an error if no channel exists for the event type.
+    ///
+    /// Returns 0 (without error) when a channel exists but has no active receivers,
+    /// since this is a normal condition (subscribers may not yet have been set up).
     pub fn publish(&self, event: SecurityEvent) -> anyhow::Result<usize> {
         let event_type = event.event_type();
         let sender = self.senders.get(&event_type).ok_or_else(|| {
             anyhow::anyhow!("No channel registered for event type {:?}", event_type)
         })?;
+        // `send` returns Err only when there are no active receivers; that is a
+        // normal condition rather than a hard failure, so we map it to 0.
         let count = sender.send(event).unwrap_or(0);
         Ok(count)
     }

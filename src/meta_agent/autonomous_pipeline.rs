@@ -49,7 +49,7 @@ pub enum ExtensionType {
 }
 
 /// Result of attempting to build a proposed extension.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct BuildResult {
     /// Proposal that was built.
     pub proposal: ExtensionProposal,
@@ -64,7 +64,7 @@ pub struct BuildResult {
 }
 
 /// Result of deploying a built extension.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct DeployResult {
     /// Build result that was deployed.
     pub build: BuildResult,
@@ -77,7 +77,7 @@ pub struct DeployResult {
 }
 
 /// Analysis of current platform capabilities vs known security domains.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct CapabilityAnalysis {
     /// Platform manifest from the scanner.
     pub manifest: PlatformManifest,
@@ -113,7 +113,8 @@ impl AutonomousPipeline {
         let manifest = self.scanner.full_scan();
         let existing_skills: std::collections::HashSet<String> =
             manifest.skills.iter().map(|s| s.name.clone()).collect();
-        let existing_modules: std::collections::HashSet<String> =
+        // Reserved for future module-level gap detection.
+        let _existing_modules: std::collections::HashSet<String> =
             manifest.modules.iter().map(|m| m.name.clone()).collect();
 
         let mut gaps = Vec::new();
@@ -154,8 +155,6 @@ impl AutonomousPipeline {
 
         // Sort by priority descending.
         gaps.sort_by(|a, b| b.priority.cmp(&a.priority));
-        // Note: existing_modules reserved for future module-level gap detection.
-        drop(existing_modules);
         gaps
     }
 
