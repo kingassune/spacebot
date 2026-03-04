@@ -282,11 +282,8 @@ impl EngagementPlanner {
         let roe_validated = !config.rules_of_engagement.in_scope.is_empty()
             && !config.rules_of_engagement.emergency_contact.is_empty();
 
-        let phase_plans: Vec<PhasePlan> = config
-            .phases
-            .iter()
-            .map(|phase| build_default_phase_plan(phase))
-            .collect();
+        let phase_plans: Vec<PhasePlan> =
+            config.phases.iter().map(build_default_phase_plan).collect();
 
         let risk_summary = format!(
             "Engagement '{}' covers {} phase(s) targeting '{}'. \
