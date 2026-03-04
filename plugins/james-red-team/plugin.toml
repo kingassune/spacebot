@@ -1,0 +1,20 @@
+[plugin]
+name = "james-red-team"
+version = "0.1.0"
+description = "Advanced red team operations and APT emulation plugin for James Security Center"
+author = "James Security"
+homepage = "https://github.com/kingassune/spacebot"
+
+[dependencies]
+james-core = ">=0.2.0"
+
+[capabilities]
+skills = [
+  "apt-emulation",
+  "exploit-development",
+  "social-engineering",
+]
+commands = ["red-team-engage"]
+
+[module]
+rust_path = "src/red_team"

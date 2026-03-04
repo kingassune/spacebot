@@ -1,0 +1,23 @@
+[plugin]
+name = "james-blockchain-security"
+version = "0.1.0"
+description = "Blockchain and smart contract security analysis plugin for James Security Center"
+author = "James Security"
+homepage = "https://github.com/kingassune/spacebot"
+
+[dependencies]
+james-core = ">=0.2.0"
+
+[capabilities]
+skills = [
+  "contract-audit",
+  "defi-security",
+  "bridge-audit",
+  "wallet-security",
+  "zk-audit",
+  "consensus-analysis",
+]
+commands = ["blockchain-audit"]
+
+[module]
+rust_path = "src/blockchain_security"
