@@ -194,6 +194,32 @@ impl SkillFactory {
             anyhow::bail!("Skill validation failed:\n{}", messages.join("\n"));
         }
 
+        // The name was already validated to contain only [a-z0-9-] by `validate()`,
+        // so it is safe to join directly. Validate reference and tool filenames
+        // separately since they are not covered by the spec-level validation.
+        for reference in &spec.references {
+            if reference.filename.contains('/')
+                || reference.filename.contains('\\')
+                || reference.filename.contains("..")
+            {
+                anyhow::bail!(
+                    "Reference filename '{}' must not contain path separators.",
+                    reference.filename
+                );
+            }
+        }
+        for script in &spec.tool_scripts {
+            if script.filename.contains('/')
+                || script.filename.contains('\\')
+                || script.filename.contains("..")
+            {
+                anyhow::bail!(
+                    "Tool script filename '{}' must not contain path separators.",
+                    script.filename
+                );
+            }
+        }
+
         let skill_dir = self.skills_root.join(&spec.name);
         std::fs::create_dir_all(&skill_dir)?;
 
