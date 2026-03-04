@@ -215,7 +215,7 @@ pub struct IocCorrelationResult {
 // — TTP mapping types —
 
 /// Kill chain phase names (Lockheed Martin model).
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum KillChainPhase {
     Reconnaissance,
     Weaponization,
@@ -333,6 +333,15 @@ impl ThreatIntelConnector {
 
     /// Correlate a list of IOCs against known threat actor profiles.
     pub fn correlate_iocs(&mut self, iocs: Vec<Ioc>) -> IocCorrelationResult {
+        if iocs.is_empty() {
+            return IocCorrelationResult {
+                submitted_iocs: Vec::new(),
+                matched_actors: Vec::new(),
+                actor_confidence: HashMap::new(),
+                summary: "No IOCs submitted for correlation.".to_string(),
+            };
+        }
+
         let mut actor_matches: HashMap<String, usize> = HashMap::new();
 
         for ioc in &iocs {
@@ -341,10 +350,10 @@ impl ThreatIntelConnector {
             }
         }
 
-        let total = iocs.len().max(1);
+        let total = iocs.len() as f64;
         let actor_confidence: HashMap<String, f64> = actor_matches
             .iter()
-            .map(|(actor, count)| (actor.clone(), *count as f64 / total as f64))
+            .map(|(actor, count)| (actor.clone(), *count as f64 / total))
             .collect();
 
         let matched_actors: Vec<String> = actor_confidence.keys().cloned().collect();

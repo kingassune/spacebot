@@ -228,8 +228,9 @@ fn check_erc20_interface(
     let required_events = ["Transfer", "Approval"];
 
     for func in required_functions {
-        let present = source.contains(&format!("function {func}"))
-            || source.contains(&format!("{func}("));
+        let fn_sig = format!("function {func}");
+        let fn_call = format!("{func}(");
+        let present = source.contains(&fn_sig) || source.contains(&fn_call);
         checks.push(InterfaceCheckResult {
             element: format!("{func}()"),
             present,
@@ -252,7 +253,8 @@ fn check_erc20_interface(
     }
 
     for event in required_events {
-        let present = source.contains(&format!("event {event}"));
+        let event_sig = format!("event {event}");
+        let present = source.contains(&event_sig);
         checks.push(InterfaceCheckResult {
             element: format!("event {event}"),
             present,
@@ -307,8 +309,9 @@ fn check_erc721_interface(
     let required_events = ["Transfer", "Approval", "ApprovalForAll"];
 
     for func in required_functions {
-        let present = source.contains(&format!("function {func}"))
-            || source.contains(&format!("{func}("));
+        let fn_sig = format!("function {func}");
+        let fn_call = format!("{func}(");
+        let present = source.contains(&fn_sig) || source.contains(&fn_call);
         checks.push(InterfaceCheckResult {
             element: format!("{func}()"),
             present,
@@ -331,7 +334,8 @@ fn check_erc721_interface(
     }
 
     for event in required_events {
-        let present = source.contains(&format!("event {event}"));
+        let event_sig = format!("event {event}");
+        let present = source.contains(&event_sig);
         checks.push(InterfaceCheckResult {
             element: format!("event {event}"),
             present,
@@ -372,8 +376,9 @@ fn check_erc1155_interface(
     let required_events = ["TransferSingle", "TransferBatch", "ApprovalForAll"];
 
     for func in required_functions {
-        let present = source.contains(&format!("function {func}"))
-            || source.contains(&format!("{func}("));
+        let fn_sig = format!("function {func}");
+        let fn_call = format!("{func}(");
+        let present = source.contains(&fn_sig) || source.contains(&fn_call);
         checks.push(InterfaceCheckResult {
             element: format!("{func}()"),
             present,
@@ -396,7 +401,8 @@ fn check_erc1155_interface(
     }
 
     for event in required_events {
-        let present = source.contains(&format!("event {event}"));
+        let event_sig = format!("event {event}");
+        let present = source.contains(&event_sig);
         checks.push(InterfaceCheckResult {
             element: format!("event {event}"),
             present,
@@ -446,8 +452,9 @@ fn check_erc4626_interface(
     ];
 
     for func in required_functions {
-        let present = source.contains(&format!("function {func}"))
-            || source.contains(&format!("{func}("));
+        let fn_sig = format!("function {func}");
+        let fn_call = format!("{func}(");
+        let present = source.contains(&fn_sig) || source.contains(&fn_call);
         checks.push(InterfaceCheckResult {
             element: format!("{func}()"),
             present,
@@ -470,7 +477,8 @@ fn check_erc4626_interface(
     }
 
     // Vault inflation attack: first depositor can manipulate share price.
-    if !source.contains("_mint(") || !source.contains("MINIMUM_SHARES") {
+    // Only flag if BOTH _mint( AND MINIMUM_SHARES are absent — having either is a mitigation signal.
+    if !source.contains("_mint(") && !source.contains("MINIMUM_SHARES") {
         findings.push(ComplianceFinding {
             standard: TokenStandard::Erc4626,
             kind: ComplianceViolationKind::VaultShareManipulation,

@@ -150,7 +150,12 @@ pub fn run_blockchain_audit(contract_source: &str, contract_name: &str) -> Block
         ..Default::default()
     };
     let verification_result = engine.verify(&verification_config);
-    let verification_summary = verification_result.report.lines().next().unwrap_or("").to_string();
+    let verification_summary = verification_result
+        .report
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .to_string();
 
     let risk_level = if mev_result.total_mev_exposure_bps > 50 {
         "High"

@@ -277,7 +277,7 @@ impl EngagementPlanner {
     /// Generate a full engagement plan from the supplied configuration.
     pub fn generate_plan(&mut self, config: EngagementPlanConfig) -> EngagementPlan {
         let roe_validated = !config.rules_of_engagement.in_scope.is_empty()
-            || !config.rules_of_engagement.emergency_contact.is_empty();
+            && !config.rules_of_engagement.emergency_contact.is_empty();
 
         let phase_plans: Vec<PhasePlan> = config
             .phases
