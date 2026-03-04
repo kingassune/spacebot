@@ -193,10 +193,7 @@ impl Campaign {
             self.checkpoints.push(Checkpoint {
                 after_phase: phase,
                 saved_at: Utc::now(),
-                description: format!(
-                    "Checkpoint after phase {}",
-                    self.current_phase_index + 1
-                ),
+                description: format!("Checkpoint after phase {}", self.current_phase_index + 1),
             });
         }
 
@@ -236,11 +233,7 @@ impl Campaign {
 
     /// Finalise and return the campaign result.
     pub fn finalise(self) -> CampaignResult {
-        let total_findings: usize = self
-            .completed_phases
-            .iter()
-            .map(|r| r.findings_count)
-            .sum();
+        let total_findings: usize = self.completed_phases.iter().map(|r| r.findings_count).sum();
         let summary = format!(
             "Campaign '{}' against '{}' — {} phases completed, {} total findings.",
             self.config.name,

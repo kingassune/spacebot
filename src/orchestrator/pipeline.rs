@@ -180,11 +180,7 @@ impl SecurityPipeline {
             let result = NodeResult {
                 node: node.clone(),
                 success: true,
-                output: format!(
-                    "{} completed for target '{}'.",
-                    node.label(),
-                    config.target
-                ),
+                output: format!("{} completed for target '{}'.", node.label(), config.target),
                 findings_count,
                 duration_secs: node.estimated_duration_secs() / 10,
                 started_at,

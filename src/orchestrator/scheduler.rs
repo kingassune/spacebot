@@ -5,8 +5,8 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BinaryHeap;
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
 
 /// Priority level for a scheduled task (higher value = higher priority).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -66,11 +66,7 @@ pub struct ScheduledTask {
 
 impl ScheduledTask {
     /// Create a new task with the given name and priority.
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-        priority: TaskPriority,
-    ) -> Self {
+    pub fn new(id: impl Into<String>, name: impl Into<String>, priority: TaskPriority) -> Self {
         Self {
             id: id.into(),
             name: name.into(),
@@ -182,7 +178,9 @@ impl TaskScheduler {
 
             // Skip if dependencies are not yet done.
             let deps_satisfied = task.depends_on.iter().all(|dep_id| {
-                self.results.iter().any(|r| &r.task_id == dep_id && r.success)
+                self.results
+                    .iter()
+                    .any(|r| &r.task_id == dep_id && r.success)
             });
             if !deps_satisfied {
                 deferred.push(entry);

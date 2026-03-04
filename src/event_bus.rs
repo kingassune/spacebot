@@ -106,10 +106,19 @@ pub enum SecurityEvent {
     ExploitGenerated(ExploitBlueprint),
     DetectionTriggered(DetectionAlert),
     ThreatIntelUpdate(ThreatIndicator),
-    AptPhaseAdvanced { group: String, phase: String },
+    AptPhaseAdvanced {
+        group: String,
+        phase: String,
+    },
     BlockchainAnomaly(BlockchainAlert),
-    ExtensionProposed { module_name: String, description: String },
-    PentestPhaseComplete { phase: String, findings_count: usize },
+    ExtensionProposed {
+        module_name: String,
+        description: String,
+    },
+    PentestPhaseComplete {
+        phase: String,
+        findings_count: usize,
+    },
 }
 
 impl SecurityEvent {
@@ -163,9 +172,7 @@ impl SecurityEventBus {
     /// Subscribe to a specific event type. Returns a receiver that will get
     /// all future events of that type published to the bus.
     pub fn subscribe(&self, event_type: &EventType) -> Option<broadcast::Receiver<SecurityEvent>> {
-        self.senders
-            .get(event_type)
-            .map(|tx| tx.subscribe())
+        self.senders.get(event_type).map(|tx| tx.subscribe())
     }
 
     /// Publish a security event. Returns the number of active subscribers that

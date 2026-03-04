@@ -143,7 +143,10 @@ impl AutonomousPipeline {
 
         // Supplement with gaps from the scanner's own gap analysis.
         for scanner_gap in &manifest.gaps {
-            if !gaps.iter().any(|g| g.description == scanner_gap.description) {
+            if !gaps
+                .iter()
+                .any(|g| g.description == scanner_gap.description)
+            {
                 gaps.push(CapabilityGap {
                     domain: scanner_gap.framework.clone(),
                     description: scanner_gap.description.clone(),
@@ -209,10 +212,7 @@ impl AutonomousPipeline {
                         proposal: proposal.clone(),
                         success: true,
                         output: format!("Plugin manifest created: {}", manifest.name),
-                        artifact_path: Some(format!(
-                            "plugins/{}/plugin.toml",
-                            manifest.name
-                        )),
+                        artifact_path: Some(format!("plugins/{}/plugin.toml", manifest.name)),
                         generated_skill: None,
                     },
                     Err(e) => BuildResult {

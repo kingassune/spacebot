@@ -3527,11 +3527,7 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             println!("{}", report.gap_analysis);
             let detected = report.pairs.iter().filter(|p| p.detected).count();
             println!("Detected: {}/{}", detected, report.pairs.len());
-            let gaps: Vec<_> = report
-                .pairs
-                .iter()
-                .filter(|p| !p.detected)
-                .collect();
+            let gaps: Vec<_> = report.pairs.iter().filter(|p| !p.detected).collect();
             if !gaps.is_empty() {
                 println!("\nDetection Gaps:");
                 for gap in &gaps {
@@ -3548,10 +3544,7 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             let report = rt.block_on(orchestrator.run_nation_state_simulation(&apt_group))?;
             println!("=== Nation-State Simulation: {} ===", report.apt_profile);
             println!("{}", report.summary);
-            println!(
-                "Detection coverage: {:.1}%",
-                report.detection_coverage_pct
-            );
+            println!("Detection coverage: {:.1}%", report.detection_coverage_pct);
             println!("Phases simulated:");
             for phase in &report.phases_simulated {
                 println!("  - {phase}");

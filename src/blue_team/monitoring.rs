@@ -161,10 +161,7 @@ pub struct MonitoringDashboard {
 }
 
 /// Evaluate alert rules against a batch of metric samples.
-pub fn evaluate_alert_rules(
-    rules: &[AlertRule],
-    samples: &[MetricSample],
-) -> Vec<MonitoringAlert> {
+pub fn evaluate_alert_rules(rules: &[AlertRule], samples: &[MetricSample]) -> Vec<MonitoringAlert> {
     let mut alerts = Vec::new();
     for sample in samples {
         for rule in rules {

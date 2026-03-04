@@ -157,41 +157,37 @@ impl JamesOrchestrator {
         let mut aggregator = ReportAggregator::new();
 
         // Simulate red team findings.
-        let red_findings = vec![
-            RawFinding {
-                id: uuid::Uuid::new_v4().to_string(),
-                source_module: "red_team".to_string(),
-                title: "Unauthenticated RCE via exposed service".to_string(),
-                severity: "Critical".to_string(),
-                description: format!(
-                    "A remotely exploitable vulnerability was identified on target '{}'.",
-                    target.address
-                ),
-                affected_target: target.address.clone(),
-                remediation: "Patch the affected service and restrict network access.".to_string(),
-                cvss_score: Some(9.8),
-                cve_id: None,
-                discovered_at: Utc::now(),
-            },
-        ];
+        let red_findings = vec![RawFinding {
+            id: uuid::Uuid::new_v4().to_string(),
+            source_module: "red_team".to_string(),
+            title: "Unauthenticated RCE via exposed service".to_string(),
+            severity: "Critical".to_string(),
+            description: format!(
+                "A remotely exploitable vulnerability was identified on target '{}'.",
+                target.address
+            ),
+            affected_target: target.address.clone(),
+            remediation: "Patch the affected service and restrict network access.".to_string(),
+            cvss_score: Some(9.8),
+            cve_id: None,
+            discovered_at: Utc::now(),
+        }];
         aggregator.ingest(red_findings);
 
         // Simulate blue team findings.
-        let blue_findings = vec![
-            RawFinding {
-                id: uuid::Uuid::new_v4().to_string(),
-                source_module: "blue_team".to_string(),
-                title: "SSH root login enabled".to_string(),
-                severity: "High".to_string(),
-                description: "Root login over SSH is permitted, increasing brute-force risk."
-                    .to_string(),
-                affected_target: target.address.clone(),
-                remediation: "Set 'PermitRootLogin no' in sshd_config.".to_string(),
-                cvss_score: Some(7.2),
-                cve_id: None,
-                discovered_at: Utc::now(),
-            },
-        ];
+        let blue_findings = vec![RawFinding {
+            id: uuid::Uuid::new_v4().to_string(),
+            source_module: "blue_team".to_string(),
+            title: "SSH root login enabled".to_string(),
+            severity: "High".to_string(),
+            description: "Root login over SSH is permitted, increasing brute-force risk."
+                .to_string(),
+            affected_target: target.address.clone(),
+            remediation: "Set 'PermitRootLogin no' in sshd_config.".to_string(),
+            cvss_score: Some(7.2),
+            cve_id: None,
+            discovered_at: Utc::now(),
+        }];
         aggregator.ingest(blue_findings);
 
         // Optionally include blockchain findings.
@@ -204,8 +200,8 @@ impl JamesOrchestrator {
                 description: "The withdrawal function can be reentered before state is updated."
                     .to_string(),
                 affected_target: target.address.clone(),
-                remediation:
-                    "Apply checks-effects-interactions pattern or use ReentrancyGuard.".to_string(),
+                remediation: "Apply checks-effects-interactions pattern or use ReentrancyGuard."
+                    .to_string(),
                 cvss_score: Some(9.0),
                 cve_id: None,
                 discovered_at: Utc::now(),
@@ -245,10 +241,7 @@ impl JamesOrchestrator {
             .iter()
             .map(|technique_id| {
                 // Simulate detection: techniques with well-known IDs get detected.
-                let detected = matches!(
-                    technique_id.as_str(),
-                    "T1059.001" | "T1566.001" | "T1078"
-                );
+                let detected = matches!(technique_id.as_str(), "T1059.001" | "T1566.001" | "T1078");
                 TechniqueDetectionPair {
                     technique_id: technique_id.clone(),
                     detected,
@@ -310,23 +303,21 @@ impl JamesOrchestrator {
             "Data Exfiltration via DNS Tunnelling".to_string(),
         ];
 
-        let findings = vec![
-            RawFinding {
-                id: uuid::Uuid::new_v4().to_string(),
-                source_module: "nation_state".to_string(),
-                title: format!("{apt_profile} TTP: Spear-phishing attachment"),
-                severity: "High".to_string(),
-                description: format!(
-                    "The {apt_profile} group's phishing TTPs were successfully emulated. \
+        let findings = vec![RawFinding {
+            id: uuid::Uuid::new_v4().to_string(),
+            source_module: "nation_state".to_string(),
+            title: format!("{apt_profile} TTP: Spear-phishing attachment"),
+            severity: "High".to_string(),
+            description: format!(
+                "The {apt_profile} group's phishing TTPs were successfully emulated. \
                      No email gateway detection triggered."
-                ),
-                affected_target: "email-gateway".to_string(),
-                remediation: "Deploy sandboxed email analysis for attachments.".to_string(),
-                cvss_score: None,
-                cve_id: None,
-                discovered_at: Utc::now(),
-            },
-        ];
+            ),
+            affected_target: "email-gateway".to_string(),
+            remediation: "Deploy sandboxed email analysis for attachments.".to_string(),
+            cvss_score: None,
+            cve_id: None,
+            discovered_at: Utc::now(),
+        }];
 
         let summary = format!(
             "Nation-state simulation for '{apt_profile}' completed. \
