@@ -19,7 +19,7 @@ pub enum FindingSeverity {
 
 impl FindingSeverity {
     /// Parse from a string (case-insensitive).
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "critical" => FindingSeverity::Critical,
             "high" => FindingSeverity::High,
@@ -239,7 +239,7 @@ fn merge_group(group: &[&RawFinding]) -> UnifiedFinding {
         .unwrap_or_else(Utc::now);
     let severity = group
         .iter()
-        .map(|f| FindingSeverity::from_str(&f.severity))
+        .map(|f| FindingSeverity::parse(&f.severity))
         .max()
         .unwrap_or(FindingSeverity::Informational);
 

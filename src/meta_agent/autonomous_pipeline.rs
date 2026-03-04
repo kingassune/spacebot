@@ -243,12 +243,11 @@ impl AutonomousPipeline {
 
         if let Some(skill) = &result.generated_skill {
             // Write the skill markdown to disk if we have a real artifact path.
-            if let Some(path) = &result.artifact_path {
-                if let Some(parent) = std::path::Path::new(path).parent() {
-                    if std::fs::create_dir_all(parent).is_ok() {
-                        let _ = std::fs::write(path, &skill.markdown);
-                    }
-                }
+            if let Some(path) = &result.artifact_path
+                && let Some(parent) = std::path::Path::new(path).parent()
+                && std::fs::create_dir_all(parent).is_ok()
+            {
+                let _ = std::fs::write(path, &skill.markdown);
             }
             DeployResult {
                 build: result.clone(),

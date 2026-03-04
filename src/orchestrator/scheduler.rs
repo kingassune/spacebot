@@ -169,11 +169,11 @@ impl TaskScheduler {
             };
 
             // Skip if not yet within the allowed window.
-            if let Some(not_before) = task.not_before {
-                if now < not_before {
-                    deferred.push(entry);
-                    continue;
-                }
+            if let Some(not_before) = task.not_before
+                && now < not_before
+            {
+                deferred.push(entry);
+                continue;
             }
 
             // Skip if dependencies are not yet done.
@@ -230,10 +230,10 @@ impl TaskScheduler {
 
     /// Cancel a queued task.
     pub fn cancel_task(&mut self, task_id: &str) {
-        if let Some(task) = self.tasks.get_mut(task_id) {
-            if task.state == TaskState::Queued {
-                task.state = TaskState::Cancelled;
-            }
+        if let Some(task) = self.tasks.get_mut(task_id)
+            && task.state == TaskState::Queued
+        {
+            task.state = TaskState::Cancelled;
         }
     }
 
