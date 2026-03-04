@@ -5,6 +5,7 @@ pub mod api;
 pub mod auth;
 pub mod blockchain_security;
 pub mod blue_team;
+pub mod commands;
 pub mod config;
 pub mod conversation;
 pub mod cron;
