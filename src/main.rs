@@ -93,6 +93,32 @@ enum SecurityCommand {
         /// Path to engagement definition TOML file
         engagement_file: std::path::PathBuf,
     },
+    /// Run a full coordinated security assessment against a target
+    Assess {
+        /// Target name, IP, or URL
+        target: String,
+        /// Include blockchain smart contract analysis
+        #[arg(long)]
+        blockchain: bool,
+    },
+    /// Run a purple team exercise with simultaneous red and blue operations
+    PurpleTeam {
+        /// Target environment description
+        target: String,
+        /// Comma-separated MITRE ATT&CK technique IDs (e.g. T1059.001,T1566.001)
+        #[arg(short, long, default_value = "T1059.001,T1566.001,T1041,T1078")]
+        techniques: String,
+    },
+    /// Simulate a nation-state APT adversary with detection coverage mapping
+    NationStateSimulate {
+        /// APT group name (e.g. APT29, APT41, "Lazarus Group")
+        apt_group: String,
+    },
+    /// Retrieve an aggregated assessment report
+    Report {
+        /// Assessment ID returned by a previous 'assess' run
+        assessment_id: String,
+    },
 }
 
 #[derive(Subcommand)]
@@ -262,6 +288,10 @@ enum MetaCommand {
         /// Action to perform (list, install <name>, audit <name>)
         action: String,
     },
+    /// Trigger the autonomous pipeline to discover and fill capability gaps
+    Extend,
+    /// Show current platform capabilities and coverage
+    Status,
 }
 
 #[derive(Subcommand)]
@@ -3298,6 +3328,41 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
                 println!("Available approved plugins: {}", available.len());
                 println!("Use 'james start' and ask James to manage the plugin marketplace.");
             }
+            MetaCommand::Extend => {
+                use james::meta_agent::autonomous_pipeline::AutonomousPipeline;
+                let pipeline = AutonomousPipeline::new(".");
+                let results = pipeline.run_improvement_iteration();
+                println!("=== Autonomous Extension Run ===");
+                let successful = results.iter().filter(|r| r.success).count();
+                println!(
+                    "Deployed {}/{} extensions successfully.",
+                    successful,
+                    results.len()
+                );
+                for result in &results {
+                    let status = if result.success { "✓" } else { "✗" };
+                    println!("  {status} {}", result.message);
+                }
+            }
+            MetaCommand::Status => {
+                use james::meta_agent::autonomous_pipeline::AutonomousPipeline;
+                let pipeline = AutonomousPipeline::new(".");
+                let analysis = pipeline.analyze_capabilities();
+                println!("=== Platform Capability Status ===");
+                println!("Coverage: {:.1}%", analysis.coverage_pct);
+                println!("Skills: {}", analysis.manifest.skills.len());
+                println!("Modules: {}", analysis.manifest.modules.len());
+                println!("Gaps identified: {}", analysis.gaps.len());
+                if !analysis.gaps.is_empty() {
+                    println!("\nTop Gaps (by priority):");
+                    for gap in analysis.gaps.iter().take(5) {
+                        println!(
+                            "  [P{}] {} — {}",
+                            gap.priority, gap.suggested_name, gap.description
+                        );
+                    }
+                }
+            }
         },
         SecurityCommand::Integration(integration_cmd) => match integration_cmd {
             IntegrationCommand::RunPipeline { target, operator } => {
@@ -3418,6 +3483,79 @@ fn cmd_security(security_cmd: SecurityCommand) -> anyhow::Result<()> {
             for (domain, engine) in &plan.domain_assignments {
                 println!("  {domain} -> {engine}");
             }
+        }
+        SecurityCommand::Assess { target, blockchain } => {
+            use james::orchestrator::{AssessmentTarget, JamesOrchestrator};
+            let assessment_target = AssessmentTarget {
+                name: target.clone(),
+                address: target.clone(),
+                environment: "unknown".to_string(),
+                include_blockchain: blockchain,
+            };
+            let orchestrator = JamesOrchestrator::new();
+            let rt = tokio::runtime::Runtime::new()?;
+            let report = rt.block_on(orchestrator.run_full_assessment(&assessment_target))?;
+            println!("=== Full Assessment Report ===");
+            println!("Assessment ID: {}", report.metadata.assessment_id);
+            println!("{}", report.executive_summary);
+            println!("Total findings: {}", report.findings.len());
+            for (severity, count) in &report.severity_counts {
+                println!("  {severity}: {count}");
+            }
+            if !report.remediation_plan.is_empty() {
+                println!("\nTop Remediation Items:");
+                for item in report.remediation_plan.iter().take(5) {
+                    println!("  - {item}");
+                }
+            }
+        }
+        SecurityCommand::PurpleTeam { target, techniques } => {
+            use james::orchestrator::{JamesOrchestrator, PurpleTeamConfig};
+            let technique_list: Vec<String> = techniques
+                .split(',')
+                .map(|t| t.trim().to_string())
+                .collect();
+            let config = PurpleTeamConfig {
+                target: target.clone(),
+                techniques: technique_list,
+                coverage_threshold: 80,
+            };
+            let orchestrator = JamesOrchestrator::new();
+            let rt = tokio::runtime::Runtime::new()?;
+            let report = rt.block_on(orchestrator.run_purple_team(&config))?;
+            println!("=== Purple Team Report ===");
+            println!("{}", report.gap_analysis);
+            let detected = report.pairs.iter().filter(|p| p.detected).count();
+            println!("Detected: {}/{}", detected, report.pairs.len());
+            let gaps: Vec<_> = report.pairs.iter().filter(|p| !p.detected).collect();
+            if !gaps.is_empty() {
+                println!("\nDetection Gaps:");
+                for gap in &gaps {
+                    if let Some(note) = &gap.gap_note {
+                        println!("  [{}] {note}", gap.technique_id);
+                    }
+                }
+            }
+        }
+        SecurityCommand::NationStateSimulate { apt_group } => {
+            use james::orchestrator::JamesOrchestrator;
+            let orchestrator = JamesOrchestrator::new();
+            let rt = tokio::runtime::Runtime::new()?;
+            let report = rt.block_on(orchestrator.run_nation_state_simulation(&apt_group))?;
+            println!("=== Nation-State Simulation: {} ===", report.apt_profile);
+            println!("{}", report.summary);
+            println!("Detection coverage: {:.1}%", report.detection_coverage_pct);
+            println!("Phases simulated:");
+            for phase in &report.phases_simulated {
+                println!("  - {phase}");
+            }
+        }
+        SecurityCommand::Report { assessment_id } => {
+            println!("Retrieving report for assessment: {assessment_id}");
+            println!(
+                "Use 'james start' and ask James to retrieve the report for assessment: {assessment_id}"
+            );
+            println!("(Persistent report storage will be available in a future release.)");
         }
     }
     Ok(())
