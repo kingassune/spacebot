@@ -12,6 +12,7 @@ pub mod mev_analysis;
 pub mod mev_protection;
 pub mod token_analysis;
 pub mod token_security;
+pub mod token_standard_audit;
 pub mod wallet;
 pub mod zk;
 
@@ -22,6 +23,7 @@ pub use invariant_testing::{FuzzCampaignResult, InvariantTestConfig, run_invaria
 pub use mev_protection::{MevAnalysisResult, MevAnalyzer};
 pub use token_analysis::{TokenAnalysisResult, analyze_token_contract};
 pub use token_security::{TokenAuditResult, TokenSecurityAnalyzer};
+pub use token_standard_audit::{TokenStandardAuditResult, TokenStandardAuditor};
 
 /// Top-level engine that dispatches contract analysis across all supported chains.
 #[derive(Debug, Clone)]
@@ -63,5 +65,14 @@ impl BlockchainSecurityEngine {
     /// Analyse MEV exposure.
     pub fn analyze_mev(&self, source: &str, name: &str) -> mev_protection::MevAnalysisResult {
         mev_protection::MevAnalyzer::analyze(source, name)
+    }
+
+    /// Run token standard compliance audit.
+    pub fn audit_token_standard(
+        &self,
+        source: &str,
+        name: &str,
+    ) -> token_standard_audit::TokenStandardAuditResult {
+        token_standard_audit::TokenStandardAuditor::audit(source, name)
     }
 }

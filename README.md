@@ -678,7 +678,7 @@ James extends its agentic architecture to professional security research and ass
 
 ### Trail of Bits Security Skills
 
-James ships with 23 security skills built on Trail of Bits' published methodologies and tooling. Install any skill and James gains structured workflows for that domain.
+James ships with 26 security skills built on Trail of Bits' published methodologies and tooling. Install any skill and James gains structured workflows for that domain.
 
 | Skill | Description |
 |---|---|
@@ -705,6 +705,9 @@ James ships with 23 security skills built on Trail of Bits' published methodolog
 | `firebase-apk-scanner` | Android APK and Firebase configuration security review |
 | `skill-improver` | Iterative skill refinement based on usage feedback |
 | `workflow-skill-design` | Design and authoring of new security workflow skills |
+| `blockchain-mev-analysis` | MEV vector detection, Flashbots/MEV-Share integration recommendations |
+| `smart-contract-formal-verification` | SMT-based invariant checking, counterexample trace generation |
+| `token-standard-compliance` | ERC-20/721/1155/4626 compliance and approval vulnerability auditing |
 
 ### Security Modules
 
@@ -767,6 +770,7 @@ New submodules added in Phase 3:
 - **MEV Analysis** (`mev_analysis`) — `MevAnalyzer` for deep MEV attack analysis: frontrunning, backrunning, sandwich attacks, JIT liquidity, uncle-block bandit, and searcher pattern detection across DeFi mempool transactions
 - **Cross-Chain Security** (`cross_chain_security`) — `CrossChainAnalyzer` for bridge protocol auditing: message replay, fake proof, validator collusion, finality exploits, bridge drain, and wrapped token desync detection with chain-specific finality configuration checks
 - **Governance Security** (`governance_security`) — `GovernanceAnalyzer` for DAO and on-chain governance: flash loan voting, proposal griefing, quorum manipulation, timelock bypass, treasury drain, bribery attack simulation, and voting power concentration assessment
+- **Token Standard Audit** (`token_standard_audit`) — `TokenStandardAuditor` for comprehensive ERC standard compliance: checks required interface functions and events for ERC-20/721/1155/4626, detects infinite approvals, approval racing conditions, fee-on-transfer edge cases, rebasing supply issues, cross-standard interaction vulnerabilities, and ERC-4626 share inflation attacks. Produces a compliance score (0–100) per contract
 
 ### Nation-State Emulation
 
@@ -854,10 +858,20 @@ New meta-agent submodules for autonomous platform growth:
 - **Autonomous Builder** (`autonomous_builder`) — `AutonomousBuilder` generates new Rust module skeletons from a `ModuleSpec`. Selects appropriate templates for five module categories (SecurityTool, AnalysisEngine, DataPipeline, IntegrationAdapter, ReportGenerator), renders skeleton code, runs a quality gate (doc comments, test presence, public function count), and proposes capability extensions based on identified gaps
 - **Learning Engine** (`learning_engine`) — `LearningEngine` records engagement results and derives technique effectiveness scores, detection correlations, and improvement recommendations. Tracks detection rates per technique and promotes high-performing technique chains
 - **Plugin Marketplace** (`plugin_marketplace`) — `PluginMarketplace` manages community-contributed security extensions with full lifecycle: registration, integrity verification (code hash), security auditing, and install management. Plugins progress through: Pending → InReview → Approved → Deprecated
+- **Threat Intel Integration** (`threat_intel_integration`) — `ThreatIntelConnector` links to MITRE ATT&CK, CVE/NVD, and threat actor databases. Provides IOC correlation against known actor profiles, TTP mapping to kill chain phases, and structured `ThreatActorProfile` objects for APT29, APT28, Lazarus, and extensible custom actors
+- **Engagement Planner** (`engagement_planner`) — `EngagementPlanner` generates multi-phase engagement plans (Recon → Exploit → Persist → ExfilSimulation → Cleanup) with `RulesOfEngagement` enforcement, automated scope validation, kill chain stage management, and blue team deconfliction logging
 
 ### Security CLI
 
 ```bash
+# Unified security center commands
+james security scan <target>                         # full security scan orchestration
+james security blockchain-audit <contract>           # blockchain-specific audit (MEV + formal verify + token compliance)
+james security red-team <scope>                      # launch red team engagement
+james security blue-team <monitor>                   # blue team monitoring mode
+james security nation-state <profile>                # nation-state emulation engagement
+james security meta extend                           # trigger meta-agent self-extension
+
 # Red team adversary emulation (authorized engagements)
 james security red-team recon "example.com in-scope systems"
 james security red-team apt-profiles
@@ -877,6 +891,7 @@ james security blockchain formal-verify "contracts/Token.sol"
 james security blockchain token-audit "0xTokenAddress"
 james security blockchain mev-analysis "0xtxhash"
 james security blockchain governance-audit "CompoundGovernor"
+james security blockchain token-standard "contracts/Token.sol"  # ERC compliance audit
 
 # Nation-state emulation (authorized use only)
 james security nation-state campaign "APT28 Emulation Q1"
@@ -886,6 +901,15 @@ james security nation-state infrastructure deploy
 # Or via top-level subcommand
 james nation-state campaign "Operation Aurora Emulation"
 james nation-state emulate Lazarus
+
+# Threat intelligence
+james security threat-intel actor APT29               # look up threat actor profile
+james security threat-intel map APT29                 # map actor TTPs to kill chain
+james security threat-intel correlate-iocs iocs.json  # IOC attribution
+
+# Engagement planning
+james security engagement plan --scope "192.168.1.0/24" --actor APT28  # generate plan
+james security engagement advance <engagement-id> recon                 # advance phase
 
 # Cross-domain orchestration (from TOML engagement file)
 james security orchestrate engagement.toml
@@ -897,6 +921,7 @@ james security meta build-plugin-scaffold my-plugin --domain blockchain
 james security meta build "supply chain scanner"     # autonomous module builder
 james security meta learn engagement-2025-01         # record engagement results
 james security meta marketplace list                 # plugin marketplace
+james security meta extend                           # full platform scan and gap report
 ```
 
 **Example engagement TOML** for `james security orchestrate`:

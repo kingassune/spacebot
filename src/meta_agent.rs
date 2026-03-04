@@ -5,6 +5,7 @@ pub mod autonomous_pipeline;
 pub mod capability_analysis;
 pub mod code_generation;
 pub mod cross_domain;
+pub mod engagement_planner;
 pub mod evaluation;
 pub mod feedback;
 pub mod learning_engine;
@@ -17,11 +18,13 @@ pub mod runtime_registry;
 pub mod self_improvement;
 pub mod skill_generator;
 pub mod skill_router;
+pub mod threat_intel_integration;
 pub mod workflow;
 
 pub use autonomous_builder::{AutonomousBuilder, GeneratedModule, ModuleCategory, ModuleSpec};
 pub use capability_analysis::{CapabilityAnalyzer, CapabilityReport, EngagementType};
 pub use cross_domain::{CrossDomainCoordinator, EngagementPlan, EngagementResult, EngagementScope};
+pub use engagement_planner::{EngagementPlanConfig, EngagementPlanner};
 pub use learning_engine::{EngagementResult as LearningEngagementResult, LearningEngine};
 pub use platform_scanner::{
     CoverageGap, ModuleEntry, PlatformManifest, PlatformScanner, SkillEntry,
@@ -30,6 +33,9 @@ pub use plugin_builder::{PluginBuilder, PluginConfig};
 pub use plugin_marketplace::{Plugin, PluginMarketplace, ReviewStatus};
 pub use self_improvement::{ImprovementSuggestion, SelfImprover, TaskOutcome, TaskOutcomeKind};
 pub use skill_generator::{GeneratedSkill, SecurityDomain, SkillGenerator};
+pub use threat_intel_integration::{
+    IocCorrelationResult, ThreatActorProfile, ThreatIntelConnector, TtpMappingResult,
+};
 
 /// Top-level meta-agent that coordinates self-extension and multi-domain orchestration.
 #[derive(Debug, Clone)]
@@ -48,6 +54,8 @@ pub struct MetaAgent {
     pub learning_engine: LearningEngine,
     pub plugin_marketplace: PluginMarketplace,
     pub platform_scanner: PlatformScanner,
+    pub threat_intel: ThreatIntelConnector,
+    pub engagement_planner: EngagementPlanner,
 }
 
 impl MetaAgent {
@@ -68,6 +76,8 @@ impl MetaAgent {
             learning_engine: LearningEngine::new(),
             plugin_marketplace: PluginMarketplace::new(),
             platform_scanner: PlatformScanner::new("."),
+            threat_intel: ThreatIntelConnector::new(),
+            engagement_planner: EngagementPlanner::new(),
         }
     }
 
@@ -96,6 +106,24 @@ impl MetaAgent {
     /// Scan the platform and return a manifest of current capabilities.
     pub fn extend_platform(&self) -> PlatformManifest {
         self.platform_scanner.full_scan()
+    }
+
+    /// Look up a threat actor profile by name or alias.
+    pub fn get_threat_actor_profile(&self, actor_name: &str) -> Option<&ThreatActorProfile> {
+        self.threat_intel.get_actor_profile(actor_name)
+    }
+
+    /// Map a threat actor's known techniques to the kill chain.
+    pub fn map_actor_to_kill_chain(&self, actor_name: &str) -> TtpMappingResult {
+        self.threat_intel.map_actor_to_kill_chain(actor_name)
+    }
+
+    /// Generate a multi-phase engagement plan.
+    pub fn plan_engagement(
+        &mut self,
+        config: EngagementPlanConfig,
+    ) -> engagement_planner::EngagementPlan {
+        self.engagement_planner.generate_plan(config)
     }
 }
 
