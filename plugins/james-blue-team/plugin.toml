@@ -1,0 +1,21 @@
+[plugin]
+name = "james-blue-team"
+version = "0.1.0"
+description = "Defensive security operations, threat detection, and incident response plugin for James Security Center"
+author = "James Security"
+homepage = "https://github.com/kingassune/spacebot"
+
+[dependencies]
+james-core = ">=0.2.0"
+
+[capabilities]
+skills = [
+  "threat-detection",
+  "incident-response",
+  "malware-analysis",
+  "siem-integration",
+]
+commands = ["blue-team-hunt"]
+
+[module]
+rust_path = "src/blue_team"

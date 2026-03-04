@@ -9,6 +9,7 @@ pub mod feedback;
 pub mod learning_engine;
 pub mod learning_loop;
 pub mod orchestrator;
+pub mod platform_scanner;
 pub mod plugin_builder;
 pub mod plugin_marketplace;
 pub mod runtime_registry;
@@ -21,6 +22,9 @@ pub use autonomous_builder::{AutonomousBuilder, GeneratedModule, ModuleCategory,
 pub use capability_analysis::{CapabilityAnalyzer, CapabilityReport, EngagementType};
 pub use cross_domain::{CrossDomainCoordinator, EngagementPlan, EngagementResult, EngagementScope};
 pub use learning_engine::{EngagementResult as LearningEngagementResult, LearningEngine};
+pub use platform_scanner::{
+    CoverageGap, ModuleEntry, PlatformManifest, PlatformScanner, SkillEntry,
+};
 pub use plugin_builder::{PluginBuilder, PluginConfig};
 pub use plugin_marketplace::{Plugin, PluginMarketplace, ReviewStatus};
 pub use self_improvement::{ImprovementSuggestion, SelfImprover, TaskOutcome, TaskOutcomeKind};
@@ -42,6 +46,7 @@ pub struct MetaAgent {
     pub autonomous_builder: AutonomousBuilder,
     pub learning_engine: LearningEngine,
     pub plugin_marketplace: PluginMarketplace,
+    pub platform_scanner: PlatformScanner,
 }
 
 impl MetaAgent {
@@ -61,6 +66,7 @@ impl MetaAgent {
             autonomous_builder: AutonomousBuilder::new(),
             learning_engine: LearningEngine::new(),
             plugin_marketplace: PluginMarketplace::new(),
+            platform_scanner: PlatformScanner::new("."),
         }
     }
 
@@ -84,6 +90,11 @@ impl MetaAgent {
     /// Get improvement recommendations for an engagement type.
     pub fn recommend_improvements(&self, engagement_type: &str) -> Vec<String> {
         learning_loop::recommend_improvements(&self.knowledge_base, engagement_type)
+    }
+
+    /// Scan the platform and return a manifest of current capabilities.
+    pub fn extend_platform(&self) -> PlatformManifest {
+        self.platform_scanner.full_scan()
     }
 }
 

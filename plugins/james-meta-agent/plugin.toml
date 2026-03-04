@@ -1,0 +1,20 @@
+[plugin]
+name = "james-meta-agent"
+version = "0.1.0"
+description = "Meta-agent self-extension engine for analyzing and extending James platform capabilities"
+author = "James Security"
+homepage = "https://github.com/kingassune/spacebot"
+
+[dependencies]
+james-core = ">=0.2.0"
+
+[capabilities]
+skills = [
+  "self-extension",
+  "capability-analysis",
+  "cross-domain",
+]
+commands = ["meta-extend"]
+
+[module]
+rust_path = "src/meta_agent"
