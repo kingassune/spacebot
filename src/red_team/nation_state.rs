@@ -3,7 +3,7 @@
 //! Provides TTP-based simulation of advanced persistent threat (APT) actors
 //! mapped to the MITRE ATT&CK framework. All emulation is strictly
 //! simulation-only and must be used exclusively within a documented,
-//! authorised red team engagement.
+//! authorized red team engagement.
 
 use crate::red_team::{
     adversary_profiles::{self, AdversaryProfile},

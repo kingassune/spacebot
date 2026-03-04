@@ -1,8 +1,8 @@
-//! Multi-phase adversary campaign orchestration for authorised red team exercises.
+//! Multi-phase adversary campaign orchestration for authorized red team exercises.
 //!
 //! Provides structured campaign planning and simulation following the MITRE ATT&CK
 //! framework lifecycle. All campaign execution is strictly simulation-only and must
-//! be used exclusively within a documented, authorised engagement scope.
+//! be used exclusively within a documented, authorized engagement scope.
 
 use crate::red_team::adversary_profiles::AdversaryProfile;
 

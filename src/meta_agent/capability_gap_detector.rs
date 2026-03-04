@@ -214,11 +214,15 @@ impl CapabilityGapDetector {
             SecurityDomain::NetworkSecurity,
             SecurityDomain::ForensicsAndIR,
         ];
-        let avg_mitre_coverage = all_domains
-            .iter()
-            .map(|d| mitre_coverage_for_domain(d) as u32)
-            .sum::<u32>()
-            / all_domains.len() as u32;
+        let avg_mitre_coverage = {
+            let sum: u32 = all_domains
+                .iter()
+                .map(|d| mitre_coverage_for_domain(d) as u32)
+                .sum();
+            let count = all_domains.len() as u32;
+            // Round to nearest integer rather than truncating.
+            ((sum * 10 / count + 5) / 10) as u8
+        };
 
         GapReport {
             gaps,

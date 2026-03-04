@@ -123,10 +123,14 @@ impl SkillFactory {
             });
         }
 
-        if !spec.name.chars().all(|c| c.is_alphanumeric() || c == '-') {
+        if !spec
+            .name
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        {
             errors.push(ValidationError {
                 field: "name".to_string(),
-                message: "Skill name must be kebab-case (alphanumeric and hyphens only)."
+                message: "Skill name must be kebab-case (lowercase ASCII letters, digits, and hyphens only)."
                     .to_string(),
             });
         }

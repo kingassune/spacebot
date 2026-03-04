@@ -87,7 +87,7 @@ pub struct AdversaryProfile {
 }
 
 impl AdversaryProfile {
-    /// Returns an estimated stealth rating (0–10) based on defence evasion technique count.
+    /// Returns an estimated stealth rating (0-10) based on defence evasion technique count.
     pub fn stealth_rating(&self) -> u8 {
         let evasion_count = self.typical_ttps.defense_evasion.len();
         (evasion_count.min(10)) as u8
@@ -155,7 +155,7 @@ pub fn apt28() -> AdversaryProfile {
                 "Russian-language compile-time paths".to_string(),
                 "Shared crypto routines".to_string(),
             ],
-            operational_timing: "Monday–Friday, 08:00–18:00 Moscow time (UTC+3)".to_string(),
+            operational_timing: "Monday-Friday, 08:00-18:00 Moscow time (UTC+3)".to_string(),
         },
     }
 }
@@ -400,7 +400,7 @@ pub fn lazarus_group() -> AdversaryProfile {
                 "Korean-language error strings".to_string(),
                 "Shared code with DarkSeoul campaign".to_string(),
             ],
-            operational_timing: "09:00–17:00 Pyongyang time (UTC+9)".to_string(),
+            operational_timing: "09:00-17:00 Pyongyang time (UTC+9)".to_string(),
         },
     }
 }
