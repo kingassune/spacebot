@@ -3,7 +3,8 @@
 use super::state::ApiState;
 use super::{
     agents, bindings, channels, config, cortex, cron, ingest, links, mcp, memories, messaging,
-    models, providers, secrets, settings, skills, system, tasks, tools, webchat, workers,
+    models, providers, secrets, security_center, settings, skills, system, tasks, tools, webchat,
+    workers,
 };
 
 use axum::Json;
@@ -221,6 +222,36 @@ pub async fn start_http_server(
         .route(
             "/humans/{id}",
             put(links::update_human).delete(links::delete_human),
+        )
+        // Security Center routes
+        .route(
+            "/v1/pentest/start",
+            post(security_center::handle_pentest_start),
+        )
+        .route(
+            "/v1/redteam/campaign",
+            post(security_center::handle_redteam_campaign),
+        )
+        .route(
+            "/v1/blueteam/hunt",
+            post(security_center::handle_blueteam_hunt),
+        )
+        .route(
+            "/v1/blockchain/audit",
+            post(security_center::handle_blockchain_audit),
+        )
+        .route(
+            "/v1/exploit/generate",
+            post(security_center::handle_exploit_generate),
+        )
+        .route(
+            "/v1/meta/capabilities",
+            get(security_center::handle_meta_capabilities),
+        )
+        .route("/v1/meta/extend", post(security_center::handle_meta_extend))
+        .route(
+            "/v1/dashboard/status",
+            get(security_center::handle_dashboard_status),
         )
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024))
         .layer(middleware::from_fn_with_state(

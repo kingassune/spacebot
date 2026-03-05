@@ -4,8 +4,6 @@
 //! dashboard. All endpoints follow a `POST /api/v1/<domain>/<action>` pattern
 //! and return JSON-encoded results.
 
-#![allow(dead_code)]
-
 use axum::{Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 
@@ -96,6 +94,7 @@ impl<T: Serialize> ApiResponse<T> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn err(message: impl Into<String>) -> ApiResponse<serde_json::Value> {
         ApiResponse {
             success: false,
@@ -161,6 +160,7 @@ pub async fn handle_blockchain_audit(Json(req): Json<BlockchainAuditRequest>) ->
     let response = ApiResponse::ok(serde_json::json!({
         "audit_id": uuid::Uuid::new_v4().to_string(),
         "chain": req.chain,
+        "contract_source_len": req.contract_source.len(),
         "formal_verification": req.formal_verification,
         "defi_analysis": req.defi_analysis,
         "status": "queued",
@@ -232,19 +232,4 @@ pub async fn handle_dashboard_status() -> impl IntoResponse {
         ],
     };
     Json(ApiResponse::ok(status))
-}
-
-/// Returns an Axum router for all Security Center endpoints.
-pub fn security_center_router() -> axum::Router {
-    use axum::routing::{get, post};
-
-    axum::Router::new()
-        .route("/api/v1/pentest/start", post(handle_pentest_start))
-        .route("/api/v1/redteam/campaign", post(handle_redteam_campaign))
-        .route("/api/v1/blueteam/hunt", post(handle_blueteam_hunt))
-        .route("/api/v1/blockchain/audit", post(handle_blockchain_audit))
-        .route("/api/v1/exploit/generate", post(handle_exploit_generate))
-        .route("/api/v1/meta/capabilities", get(handle_meta_capabilities))
-        .route("/api/v1/meta/extend", post(handle_meta_extend))
-        .route("/api/v1/dashboard/status", get(handle_dashboard_status))
 }
