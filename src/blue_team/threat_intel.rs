@@ -86,9 +86,44 @@ pub struct ThreatIntelConfig {
 }
 
 pub async fn fetch_intel(config: &ThreatIntelConfig) -> Result<Vec<ThreatIntelReport>> {
-    // Real implementation would query configured feeds using api_keys.
-    let _ = config;
-    Ok(vec![])
+    if config.feeds.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let cache_path = std::path::Path::new(&config.cache_dir);
+
+    let mut reports = Vec::new();
+
+    for feed in &config.feeds {
+        let cache_file = cache_path.join(format!("{feed:?}.json").to_lowercase());
+
+        // Try to load from cache first.
+        if let Ok(cached) = tokio::fs::read_to_string(&cache_file).await {
+            if let Ok(cached_reports) = serde_json::from_str::<Vec<ThreatIntelReport>>(&cached) {
+                tracing::debug!(feed = ?feed, "loaded threat intel from cache");
+                reports.extend(cached_reports);
+                continue;
+            }
+        }
+
+        // Log which feed would be queried; live queries require API keys and
+        // external connectivity that may not be present in all deployments.
+        let api_key = config.api_keys.get(&format!("{feed:?}"));
+        if api_key.is_none() {
+            tracing::debug!(
+                feed = ?feed,
+                "no API key configured for feed, skipping live query"
+            );
+        } else {
+            tracing::info!(
+                feed = ?feed,
+                "threat intel feed configured but live query not yet implemented — \
+                 populate cache directory to serve pre-fetched reports"
+            );
+        }
+    }
+
+    Ok(reports)
 }
 
 pub fn enrich_ioc(ioc: &mut Ioc, reports: &[ThreatIntelReport]) {
@@ -155,5 +190,75 @@ impl ThreatIntelReport {
 impl Default for ThreatIntelReport {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_config(feeds: Vec<IntelFeed>) -> ThreatIntelConfig {
+        ThreatIntelConfig {
+            feeds,
+            api_keys: HashMap::new(),
+            cache_dir: "/tmp/nonexistent_intel_cache".to_string(),
+        }
+    }
+
+    #[tokio::test]
+    async fn fetch_intel_empty_feeds() {
+        let config = make_config(vec![]);
+        let reports = fetch_intel(&config).await.unwrap();
+        assert!(reports.is_empty());
+    }
+
+    #[tokio::test]
+    async fn fetch_intel_no_cache_returns_empty() {
+        // No API keys, no cache — should return empty without error.
+        let config = make_config(vec![IntelFeed::Otx]);
+        let reports = fetch_intel(&config).await.unwrap();
+        assert!(reports.is_empty());
+    }
+
+    #[test]
+    fn correlate_iocs_groups_by_type() {
+        let iocs = vec![
+            Ioc::new("1.2.3.4", IocType::IpAddress, "test"),
+            Ioc::new("5.6.7.8", IocType::IpAddress, "test"),
+            Ioc::new("evil.com", IocType::Domain, "test"),
+        ];
+        let groups = correlate_iocs(&iocs);
+        assert_eq!(groups.len(), 2, "expected 2 groups (IP and domain)");
+        let ip_group = groups.iter().find(|g| g[0].ioc_type == IocType::IpAddress);
+        assert!(ip_group.is_some());
+        assert_eq!(ip_group.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn enrich_ioc_adds_tags_from_matching_report() {
+        let mut ioc = Ioc::new("1.2.3.4", IocType::IpAddress, "test");
+        let report = ThreatIntelReport {
+            actor: Some(ThreatActor {
+                name: "APT28".to_string(),
+                aliases: vec![],
+                motivation: "espionage".to_string(),
+                sophistication: "high".to_string(),
+                country: Some("RU".to_string()),
+            }),
+            iocs: vec![Ioc::new("1.2.3.4", IocType::IpAddress, "test")],
+            ttps: vec!["T1078".to_string()],
+            confidence: 80,
+            report_date: Utc::now(),
+        };
+        enrich_ioc(&mut ioc, &[report]);
+        assert!(ioc.tags.contains(&"T1078".to_string()));
+        assert!(ioc.tags.contains(&"actor:APT28".to_string()));
+    }
+
+    #[test]
+    fn score_ioc_returns_confidence() {
+        let mut ioc = Ioc::new("evil.com", IocType::Domain, "test");
+        ioc.confidence = 75;
+        assert_eq!(score_ioc(&ioc), 75);
     }
 }

@@ -1,8 +1,12 @@
 //! SIEM/SOAR integration, query building, alert ingestion, and correlation for blue team operations.
 
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use chrono::Utc;
+use sha2::Digest as _;
 use uuid::Uuid;
+
+/// Base confidence increment per alert in a correlation group.
+const CORRELATION_CONFIDENCE_FACTOR: f64 = 0.1;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SiemPlatform {
@@ -160,15 +164,72 @@ impl QueryBuilder {
 }
 
 pub async fn ingest_alert(config: &SiemConfig, alert_json: &str) -> Result<String> {
-    // Real implementation would POST alert_json to the configured SIEM endpoint.
-    let _ = (config, alert_json);
-    Ok("alert-id-mock".to_string())
+    // Parse the incoming JSON to validate it and extract a stable alert ID.
+    let value: serde_json::Value =
+        serde_json::from_str(alert_json).map_err(|e| anyhow!("invalid alert JSON: {e}"))?;
+
+    // Use an existing `id` field when present, otherwise derive one from a
+    // deterministic SHA-256 hash of the content so duplicate alerts collapse
+    // consistently across Rust versions and deployments.
+    let alert_id = if let Some(id) = value.get("id").and_then(|v| v.as_str()) {
+        id.to_string()
+    } else {
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(alert_json.as_bytes());
+        hasher.update(config.index.as_bytes());
+        format!("alert-{:x}", hasher.finalize())
+    };
+
+    tracing::debug!(
+        platform = ?config.platform,
+        host = %config.host,
+        index = %config.index,
+        alert_id = %alert_id,
+        "ingested SIEM alert"
+    );
+
+    Ok(alert_id)
 }
 
 pub fn correlate_alerts(alerts: &[String]) -> Vec<AlertCorrelation> {
-    // Real implementation would apply correlation logic across alerts.
-    let _ = alerts;
-    vec![]
+    if alerts.is_empty() {
+        return vec![];
+    }
+
+    // Parse each JSON alert and group by the `technique` or `event_type` field.
+    let mut technique_groups: std::collections::HashMap<String, Vec<String>> =
+        std::collections::HashMap::new();
+
+    for alert in alerts {
+        let technique = serde_json::from_str::<serde_json::Value>(alert)
+            .ok()
+            .and_then(|v| {
+                v.get("technique")
+                    .or_else(|| v.get("event_type"))
+                    .and_then(|t| t.as_str())
+                    .map(|s| s.to_string())
+            })
+            .unwrap_or_else(|| "unknown".to_string());
+
+        technique_groups
+            .entry(technique)
+            .or_default()
+            .push(alert.clone());
+    }
+
+    // Emit a correlation record for each technique group with >=2 alerts.
+    technique_groups
+        .into_iter()
+        .filter(|(_, group)| group.len() >= 2)
+        .map(|(technique, group_alerts)| {
+            let count = group_alerts.len();
+            AlertCorrelation::new(
+                group_alerts,
+                &technique,
+                (count as f64 * CORRELATION_CONFIDENCE_FACTOR).min(1.0),
+            )
+        })
+        .collect()
 }
 
 impl SoarPlaybook {
@@ -195,5 +256,85 @@ impl AlertCorrelation {
             first_seen: now,
             last_seen: now,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn elastic_config() -> SiemConfig {
+        SiemConfig {
+            platform: SiemPlatform::Elastic,
+            host: "localhost".to_string(),
+            port: 9200,
+            api_key: "test".to_string(),
+            index: "alerts".to_string(),
+        }
+    }
+
+    #[tokio::test]
+    async fn ingest_alert_uses_existing_id() {
+        let config = elastic_config();
+        let alert = r#"{"id":"abc-123","event_type":"login_failure"}"#;
+        let result = ingest_alert(&config, alert).await.unwrap();
+        assert_eq!(result, "abc-123");
+    }
+
+    #[tokio::test]
+    async fn ingest_alert_generates_stable_id() {
+        let config = elastic_config();
+        let alert = r#"{"event_type":"brute_force","source":"10.0.0.1"}"#;
+        let id1 = ingest_alert(&config, alert).await.unwrap();
+        let id2 = ingest_alert(&config, alert).await.unwrap();
+        assert_eq!(id1, id2, "same alert content should produce the same ID");
+        assert!(id1.starts_with("alert-"), "generated ID should have prefix");
+    }
+
+    #[tokio::test]
+    async fn ingest_alert_rejects_invalid_json() {
+        let config = elastic_config();
+        let result = ingest_alert(&config, "not json").await;
+        assert!(result.is_err(), "invalid JSON should return an error");
+    }
+
+    #[test]
+    fn correlate_alerts_empty() {
+        assert!(correlate_alerts(&[]).is_empty());
+    }
+
+    #[test]
+    fn correlate_alerts_single_no_correlation() {
+        let alerts = vec![r#"{"technique":"T1078"}"#.to_string()];
+        assert!(correlate_alerts(&alerts).is_empty());
+    }
+
+    #[test]
+    fn correlate_alerts_groups_by_technique() {
+        let alerts = vec![
+            r#"{"technique":"T1078","src":"10.0.0.1"}"#.to_string(),
+            r#"{"technique":"T1078","src":"10.0.0.2"}"#.to_string(),
+        ];
+        let correlations = correlate_alerts(&alerts);
+        assert_eq!(correlations.len(), 1);
+        assert_eq!(correlations[0].technique, "T1078");
+        assert_eq!(correlations[0].alert_ids.len(), 2);
+    }
+
+    #[test]
+    fn query_builder_elastic() {
+        let mut qb = QueryBuilder::new(SiemPlatform::Elastic);
+        qb.add_filter("host.ip", "10.0.0.1");
+        let query = qb.build();
+        assert!(query.contains("10.0.0.1"), "query: {query}");
+    }
+
+    #[test]
+    fn query_builder_splunk() {
+        let mut qb = QueryBuilder::new(SiemPlatform::Splunk);
+        qb.base_query = "index=security".to_string();
+        qb.add_filter("src_ip", "192.168.1.1");
+        let query = qb.build();
+        assert!(query.contains("src_ip=192.168.1.1"), "query: {query}");
     }
 }

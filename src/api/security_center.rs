@@ -4,8 +4,6 @@
 //! dashboard. All endpoints follow a `POST /api/v1/<domain>/<action>` pattern
 //! and return JSON-encoded results.
 
-#![allow(dead_code)]
-
 use axum::{Json, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 
