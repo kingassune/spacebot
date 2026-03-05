@@ -18,6 +18,7 @@ mod messaging;
 mod models;
 mod providers;
 mod secrets;
+mod security_center;
 mod server;
 mod settings;
 mod skills;

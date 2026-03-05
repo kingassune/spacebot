@@ -1,6 +1,11 @@
 ---
 name: building-secure-contracts
 description: "James integration of Trail of Bits' secure contract development methodology. Guides auditing of Solidity/Vyper smart contracts for common vulnerability classes."
+allowed-tools:
+  - Bash
+  - Read
+  - Grep
+  - Glob
 ---
 
 # Building Secure Contracts

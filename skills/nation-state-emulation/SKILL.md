@@ -1,6 +1,11 @@
 ---
 name: nation-state-emulation
 description: "Comprehensive nation-state adversary emulation skill for authorized red team engagements. References MITRE ATT&CK, Lockheed Martin Cyber Kill Chain, and detection evasion scoring."
+allowed-tools:
+  - Bash
+  - Read
+  - Grep
+  - Glob
 ---
 
 # Nation-State Adversary Emulation
