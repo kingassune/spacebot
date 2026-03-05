@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -26,7 +27,7 @@ pub enum StixObjectType {
     CourseOfAction,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum IocType {
     IpAddress,
     Domain,
@@ -50,7 +51,7 @@ impl std::fmt::Display for IocType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Ioc {
     pub value: String,
     pub ioc_type: IocType,
@@ -60,7 +61,7 @@ pub struct Ioc {
     pub first_seen: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThreatActor {
     pub name: String,
     pub aliases: Vec<String>,
@@ -69,7 +70,7 @@ pub struct ThreatActor {
     pub country: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThreatIntelReport {
     pub actor: Option<ThreatActor>,
     pub iocs: Vec<Ioc>,
