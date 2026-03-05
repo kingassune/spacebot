@@ -319,7 +319,6 @@ def withdraw(amount: uint256):
             pragma solidity ^0.8.0;
             contract Router {
                 function swap(address token, uint256 amountIn) external {
-                    // No amountOutMin check
                     _swap(token, amountIn);
                 }
             }
