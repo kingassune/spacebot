@@ -380,6 +380,8 @@ fn map_severity_level(s: &SeverityLevel) -> FindingSeverity {
         SeverityLevel::Medium => FindingSeverity::Medium,
         SeverityLevel::Low => FindingSeverity::Low,
         SeverityLevel::Informational => FindingSeverity::Informational,
+        // Gas-level findings are informational in the unified audit report.
+        SeverityLevel::Gas => FindingSeverity::Informational,
     }
 }
 

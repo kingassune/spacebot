@@ -8,7 +8,7 @@
 //! Generated skills are validated against the schema before being
 //! hot-reloaded into the platform's runtime skill registry.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// Allowed tool types in a skill's YAML frontmatter.
 #[derive(Debug, Clone, PartialEq)]
