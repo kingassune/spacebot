@@ -228,7 +228,7 @@ impl CapabilityGapDetector {
             gaps,
             total_domains_covered,
             total_domains_missing,
-            mitre_total_coverage_percent: avg_mitre_coverage as u8,
+            mitre_total_coverage_percent: avg_mitre_coverage,
             recommended_next_build,
         }
     }
