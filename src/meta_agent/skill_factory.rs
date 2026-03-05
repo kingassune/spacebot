@@ -255,8 +255,10 @@ impl SkillFactory {
         if let Ok(entries) = read_dir {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.is_dir() && path.join("SKILL.md").exists()
-                    && let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                if path.is_dir()
+                    && path.join("SKILL.md").exists()
+                    && let Some(name) = path.file_name().and_then(|n| n.to_str())
+                {
                     skills.push(name.to_string());
                 }
             }
