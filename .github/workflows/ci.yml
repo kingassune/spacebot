@@ -9,6 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
+  ORT_STRATEGY: system
 
 jobs:
   check:
@@ -17,8 +18,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          pip3 install onnxruntime
+          ORT_VERSION=$(python3 -c 'import onnxruntime; print(onnxruntime.__version__)')
+          ORT_LIB=$(python3 -c "import onnxruntime, os; print(os.path.dirname(onnxruntime.__file__))")/capi
+          sudo ln -sf "${ORT_LIB}/libonnxruntime.so.${ORT_VERSION}" /usr/local/lib/libonnxruntime.so
+          sudo ldconfig
+          mkdir -p /tmp/pkgconfig
+          cat > /tmp/pkgconfig/libonnxruntime.pc << EOF
+          Name: libonnxruntime
+          Description: ONNX Runtime
+          Version: ${ORT_VERSION}
+          Libs: -L/usr/local/lib -lonnxruntime
+          Cflags:
+          EOF
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -28,9 +44,13 @@ jobs:
 
       - name: cargo check
         run: cargo check --all-targets
+        env:
+          PKG_CONFIG_PATH: /tmp/pkgconfig
 
       - name: cargo clippy
         run: cargo clippy --all-targets
+        env:
+          PKG_CONFIG_PATH: /tmp/pkgconfig
 
   fmt:
     name: Format
@@ -51,8 +71,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install protoc
-        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+          pip3 install onnxruntime
+          ORT_LIB=$(python3 -c "import onnxruntime, os; print(os.path.dirname(onnxruntime.__file__))")/capi
+          ORT_VERSION=$(python3 -c 'import onnxruntime; print(onnxruntime.__version__)')
+          sudo ln -sf "${ORT_LIB}/libonnxruntime.so.${ORT_VERSION}" /usr/local/lib/libonnxruntime.so
+          sudo ln -sf "${ORT_LIB}/libonnxruntime.so.${ORT_VERSION}" /usr/local/lib/libonnxruntime.so.1
+          sudo ldconfig
+          mkdir -p /tmp/pkgconfig
+          cat > /tmp/pkgconfig/libonnxruntime.pc << EOF
+          Name: libonnxruntime
+          Description: ONNX Runtime
+          Version: ${ORT_VERSION}
+          Libs: -L/usr/local/lib -lonnxruntime
+          Cflags:
+          EOF
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -60,3 +96,12 @@ jobs:
 
       - name: cargo test (lib)
         run: cargo test --lib
+        env:
+          PKG_CONFIG_PATH: /tmp/pkgconfig
+          LD_LIBRARY_PATH: /usr/local/lib
+
+      - name: cargo test (integration)
+        run: cargo test --test security_modules --test security_integration
+        env:
+          PKG_CONFIG_PATH: /tmp/pkgconfig
+          LD_LIBRARY_PATH: /usr/local/lib
