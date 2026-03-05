@@ -99,12 +99,12 @@ pub async fn fetch_intel(config: &ThreatIntelConfig) -> Result<Vec<ThreatIntelRe
         let cache_file = cache_path.join(format!("{feed:?}.json").to_lowercase());
 
         // Try to load from cache first.
-        if let Ok(cached) = tokio::fs::read_to_string(&cache_file).await {
-            if let Ok(cached_reports) = serde_json::from_str::<Vec<ThreatIntelReport>>(&cached) {
-                tracing::debug!(feed = ?feed, "loaded threat intel from cache");
-                reports.extend(cached_reports);
-                continue;
-            }
+        if let Ok(cached) = tokio::fs::read_to_string(&cache_file).await
+            && let Ok(cached_reports) = serde_json::from_str::<Vec<ThreatIntelReport>>(&cached)
+        {
+            tracing::debug!(feed = ?feed, "loaded threat intel from cache");
+            reports.extend(cached_reports);
+            continue;
         }
 
         // Log which feed would be queried; live queries require API keys and

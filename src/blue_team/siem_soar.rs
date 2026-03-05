@@ -335,6 +335,6 @@ mod tests {
         qb.base_query = "index=security".to_string();
         qb.add_filter("src_ip", "192.168.1.1");
         let query = qb.build();
-        assert!(query.contains("src_ip=192.168.1.1"), "query: {query}");
+        assert!(query.contains("src_ip=\"192.168.1.1\""), "query: {query}");
     }
 }
